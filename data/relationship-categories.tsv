@@ -1,0 +1,754 @@
+category	subcategory	phrase	count
+family	aunt-uncle	my uncle	11065
+family	aunt-uncle	my aunt	7978
+family	aunt-uncle	my auntie	5128
+family	child	my son	75265
+family	child	my daughter	45878
+family	child	my kids	7522
+family	child	my sons	6273
+family	child	my child	5835
+family	child	my children	5474
+family	child	my beautiful daughter	3585
+family	child	my daughters	3229
+family	child	my only child	2572
+family	child	my daughter is	1231
+family	child	my lovely daughter	1203
+family	child	my son is	1018
+family	family-other	my sister in law	3224
+family	family-other	my brother in law	2561
+family	family-other	my sis in law	1510
+family	nibling	my niece	15210
+family	nibling	my nephew	15145
+family	nibling	my beautiful niece	2048
+family	nibling	my nieces	1339
+family	nibling	my nephews	1233
+family	parent	my mom	38821
+family	parent	my dad	30294
+family	parent	my daddy	9810
+family	parent	my mum	8828
+family	parent	my mother	8403
+family	parent	my mommy	7902
+family	parent	my parents	6963
+family	parent	my father	5612
+family	parent	my momma	4881
+family	parent	my mom is	2371
+family	parent	my dad is	2249
+family	parent	my daddy is	1917
+family	parent	my mommy is	1627
+family	parent	my parents are	1134
+family	parent	my beautiful mother	877
+family	parent	my mom and dad	753
+family	parent	my father is	638
+family/social	brother	my bro	642961
+family/social	brother	my brother	441574
+family/social	brother	my bros	176209
+family/social	brother	my brothers	105126
+family/social	brother	my lil bro	68774
+family/social	brother	my big bro	53085
+family/social	brother	my brotha	40736
+family/social	brother	my big brother	31645
+family/social	brother	my little brother	27555
+family/social	brother	my bruh	21253
+family/social	brother	my lil brother	17562
+family/social	brother	my little bro	14900
+family/social	brother	my brudda	14365
+family/social	brother	my brothas	8612
+family/social	brother	my brova	7772
+family/social	brother	my broski	7713
+family/social	brother	my bra	6839
+family/social	brother	my brutha	5744
+family/social	brother	my lil bros	5674
+family/social	brother	my lil bruh	5653
+family/social	brother	my baby brother	5482
+family/social	brother	my brah	4416
+family/social	brother	my big bruh	4158
+family/social	brother	my big bros	3866
+family/social	brother	my bruddas	3731
+family/social	brother	my blood brother	3371
+family/social	brother	my older brother	3254
+family/social	brother	my lil bra	3100
+family/social	brother	my bro bro	2949
+family/social	brother	my baby bro	2850
+family/social	brother	my bruhs	2730
+family/social	brother	my brother is	2664
+family/social	brother	my best bro	2371
+family/social	brother	my big brothers	2250
+family/social	brother	my big bra	2199
+family/social	brother	my twin brother	2167
+family/social	brother	my brovas	2034
+family/social	brother	my long lost brother	1975
+family/social	brother	my lovely brother	1883
+family/social	brother	my lil brotha	1747
+family/social	brother	my lil brothers	1715
+family/social	brother	my best bros	1710
+family/social	brother	my favorite brother	1654
+family/social	brother	my other brother	1631
+family/social	brother	my little brothers	1574
+family/social	brother	my younger brother	1551
+family/social	brother	my beloved brother	1523
+family/social	brother	my mf brother	1492
+family/social	brother	my lil big bro	1382
+family/social	brother	my main bro	1364
+family/social	brother	my fucking brother	1268
+family/social	brother	my big brotha	1232
+family/social	brother	my bruthas	1163
+family/social	brother	my lil brah	1162
+family/social	brother	my dear brother	1090
+family/social	brother	my little big brother	1063
+family/social	brother	my main bros	1025
+family/social	brother	my little bros	1007
+family/social	brother	my amazing brother	1006
+family/social	brother	my lil brudda	992
+family/social	brother	my two brothers	980
+family/social	brother	my day 1 bro	976
+family/social	brother	my older bro	951
+family/social	brother	my bruh bruh	944
+family/social	brother	my blood brothers	897
+family/social	brother	my blood bro	759
+family/social	brother	my twin bro	746
+family/social	brother	my bro is	677
+family/social	cousin	my cousin	261792
+family/social	cousin	my cuz	43164
+family/social	cousin	my cousins	33475
+family/social	cousin	my cuzzo	28207
+family/social	cousin	my beautiful cousin	20014
+family/social	cousin	my lil cousin	15729
+family/social	cousin	my little cousin	12891
+family/social	cousin	my favorite cousin	12430
+family/social	cousin	my lil cuz	11340
+family/social	cousin	my big cousin	9891
+family/social	cousin	my cuzin	7649
+family/social	cousin	my cuzo	7163
+family/social	cousin	my big cuz	5716
+family/social	cousin	my lovely cousin	5060
+family/social	cousin	my cuzzin	5025
+family/social	cousin	my baby cousin	4571
+family/social	cousin	my fav cousin	4208
+family/social	cousin	my lil cuzzo	3138
+family/social	cousin	my gorgeous cousin	2873
+family/social	cousin	my favorite cousins	2662
+family/social	cousin	my amazing cousin	2621
+family/social	cousin	my big cuzzo	1867
+family/social	cousin	my awesome cousin	1671
+family/social	cousin	my beautiful cousins	1590
+family/social	cousin	my lil cuzin	1549
+family/social	cousin	my wonderful cousin	1426
+family/social	cousin	my lil cousins	1259
+family/social	cousin	my little cuz	1215
+family/social	cousin	my long lost cousin	1099
+family/social	cousin	my pretty cousin	1045
+family/social	cousin	my lil cuzzin	1028
+family/social	family	my fam	79998
+family/social	family	my family	76723
+family/social	family	my second family	6983
+family/social	family	my little family	1737
+family/social	family	my 2nd family	1726
+family/social	family	my twitter family	1708
+family/social	family	my lovely family	1452
+family/social	family	my twitter fam	1396
+family/social	family	my new family	1361
+family/social	family	my other family	1336
+family/social	family	my second fam	1204
+family/social	family	my big family	1056
+family/social	family	my extended family	981
+family/social	family	my family is	981
+family/social	friend	my twin	82890
+family/social	friend	my birthday twin	4982
+family/social	friend	my lovess	1888
+family/social	friend	my huns	1671
+family/social	friend	my long lost twin	1196
+family/social	sister	my sister	358365
+family/social	sister	my sis	199837
+family/social	sister	my sisters	69963
+family/social	sister	my lil sis	47865
+family/social	sister	my little sister	40000
+family/social	sister	my sissy	39741
+family/social	sister	my big sis	26181
+family/social	sister	my big sister	22680
+family/social	sister	my sista	22380
+family/social	sister	my lil sister	17539
+family/social	sister	my beautiful sister	16748
+family/social	sister	my little sis	11164
+family/social	sister	my baby sister	10432
+family/social	sister	my lovely sister	8708
+family/social	sister	my sist	7083
+family/social	sister	my baby sis	6674
+family/social	sister	my beloved sister	4321
+family/social	sister	my sister is	3865
+family/social	sister	my amazing sister	3711
+family/social	sister	my twin sister	3682
+family/social	sister	my sistah	3290
+family/social	sister	my little sisters	3113
+family/social	sister	my soul sister	2906
+family/social	sister	my beautiful sisters	2813
+family/social	sister	my big sissy	2688
+family/social	sister	my sissys	2659
+family/social	sister	my lil sisters	2651
+family/social	sister	my beautiful sis	2622
+family/social	sister	my favorite sister	2502
+family/social	sister	my older sister	2452
+family/social	sister	my big sisters	2413
+family/social	sister	my long lost sister	2304
+family/social	sister	my lovely sis	2229
+family/social	sister	my gorgeous sister	2213
+family/social	sister	my wonderful sister	1848
+family/social	sister	my lovely sisters	1804
+family/social	sister	my lil sista	1763
+family/social	sister	my beautiful little sister	1753
+family/social	sister	my good sis	1684
+family/social	sister	my beloved sista	1683
+family/social	sister	my lovely sista	1579
+family/social	sister	my little sissy	1494
+family/social	sister	my dear sister	1486
+family/social	sister	my awesome sister	1343
+family/social	sister	my lil sissy	1319
+family/social	sister	my other sister	1282
+family/social	sister	my god sister	1252
+family/social	sister	my sweet sister	1181
+family/social	sister	my brother and sister	1166
+family/social	sister	my soul sista	1129
+family/social	sister	my blood sister	1093
+family/social	sister	my two sisters	1065
+family/social	sister	my sissies	1049
+family/social	sister	my pretty sister	989
+family/social	sister	my beautiful big sister	986
+family/social	sister	my sisters are	924
+family/social	sister	my best sister	918
+family/social	sister	my twin sis	871
+family/social	sister	my younger sister	868
+family/social	sister	my sis is	716
+None	None	my partner	16455
+None	None	my bday twin	1429
+None	None	my beautiful twin	1392
+None	senior	my seniors	6529
+None	senior	my favorite seniors	1961
+organizational	client	my client	5954
+organizational	client	my clients	1701
+organizational	colleague	my colleague	24625
+organizational	colleague	my colleagues	10188
+organizational	colleague	my coworker	3878
+organizational	colleague	my friend and colleague	2320
+organizational	colleague	my coworkers	2062
+organizational	colleague	my former colleague	680
+organizational	manager/boss	my boss	11046
+organizational	manager/boss	my manager	7851
+organizational	mentor	my mentor	5541
+organizational	mentor	my mentors	1360
+organizational	partner	my business partner	1460
+organizational	pastor	my pastor	3687
+organizational	student	my students	2522
+organizational	student	my student	1703
+organizational	teacher/coach	my coach	4323
+organizational	teacher/coach	my teacher	2126
+organizational	teacher/coach	my coaches	1311
+parasocial	actor	my favorite actor	2129
+parasocial	actor	my favorite actors	1405
+parasocial	artist	my artist	9251
+parasocial	artist	my favorite band	7505
+parasocial	artist	my dj	5582
+parasocial	artist	my favorite artist	5443
+parasocial	artist	my favorite rapper	5360
+parasocial	artist	my producer	5281
+parasocial	artist	my fav band	3640
+parasocial	artist	my favorite dj	3133
+parasocial	artist	my favorite bands	3105
+parasocial	artist	my favourite band	1870
+parasocial	artist	my new band	1449
+parasocial	artist	my fav rapper	1373
+parasocial	artist	my fav dj	1316
+parasocial	artist	my producers	1247
+parasocial	artist	my fav artist	1244
+parasocial	artist	my favorite band is	1111
+parasocial	athlete	my favorite player	6581
+parasocial	fan	my biggest fan	36151
+parasocial	fan	my fans	8582
+parasocial	fan	my fan	1342
+parasocial	fan	my big fans	1318
+parasocial	idol	my idol	112657
+parasocial	idol	my hero	42856
+parasocial	idol	my inspiration	37777
+parasocial	idol	my idols	36769
+parasocial	idol	my heroes	12420
+parasocial	idol	my idol is	10834
+parasocial	idol	my wcw	10824
+parasocial	idol	my idols are	9380
+parasocial	idol	my inspirations	5296
+parasocial	idol	my wcw is	5128
+parasocial	idol	my inspiration is	4628
+parasocial	idol	my beloved idol	1729
+parasocial	idol	my inspirations are	1600
+parasocial	idol	my biggest inspiration	1520
+parasocial	idol	my fav player	1473
+parasocial	idol	my biggest inspirations	1417
+parasocial	idol	my hero is	1377
+parasocial	idol	my childhood hero	1095
+romance	boyfriend/girlfriend	my girlfriend	107268
+romance	boyfriend/girlfriend	my boyfriend	95230
+romance	boyfriend/girlfriend	my bf	41215
+romance	boyfriend/girlfriend	my baby girl	39480
+romance	boyfriend/girlfriend	my gf	38941
+romance	boyfriend/girlfriend	my beautiful girlfriend	25376
+romance	boyfriend/girlfriend	my gal	19062
+romance	boyfriend/girlfriend	my amazing boyfriend	10715
+romance	boyfriend/girlfriend	my amazing girlfriend	9243
+romance	boyfriend/girlfriend	my wonderful boyfriend	4398
+romance	boyfriend/girlfriend	my wonderful girlfriend	3656
+romance	boyfriend/girlfriend	my gorgeous girlfriend	2835
+romance	boyfriend/girlfriend	my lovely girlfriend	2747
+romance	boyfriend/girlfriend	my beautiful gf	2619
+romance	boyfriend/girlfriend	my boyfriend is	2590
+romance	boyfriend/girlfriend	my lovely boyfriend	2583
+romance	boyfriend/girlfriend	my girlfriend is	2321
+romance	boyfriend/girlfriend	my gorgeous boyfriend	1345
+romance	boyfriend/girlfriend	my handsome boyfriend	1196
+romance	boyfriend/girlfriend	my perfect boyfriend	977
+romance	boyfriend/girlfriend	my amazing gf	964
+romance	boyfriend/girlfriend	my sweet boyfriend	939
+romance	boyfriend/girlfriend	my awesome girlfriend	890
+romance	boyfriend/girlfriend	my beautiful boyfriend	798
+romance	boyfriend/girlfriend	my bf is	747
+romance	boyfriend/girlfriend	my gf is	695
+romance	dating	my date	4988
+romance	dating	my prom date	2100
+romance	dating	my hot date	1193
+romance	engaged	my fiance	4100
+romance	engaged	my fiancee	1297
+romance	ex	my ex	5870
+romance	romance-generic	my bestie	174050
+romance/social	romance-generic	my bb	22135
+romance	romance-generic	my gurl	20084
+romance	romance-generic	my baby	496228
+romance	romance-generic	my love	264779
+romance	romance-generic	my boo	242176
+romance	romance-generic	my babe	127272
+romance	romance-generic	my bae	80951
+romance	romance-generic	my bby	47122
+romance	romance-generic	my main	44030
+romance	romance-generic	my everything	36944
+romance	romance-generic	my beloved	30389
+romance	romance-generic	my partner in crime	25516
+romance	romance-generic	my one and only	19956
+romance	romance-generic	my lover	19675
+romance	romance-generic	my babygirl	19484
+romance	romance-generic	my lady	17025
+romance	romance-generic	my darling	16426
+romance	romance-generic	my valentine	15754
+romance	romance-generic	my boo thang	15266
+romance	romance-generic	my honey	13379
+romance	romance-generic	my sweetheart	12991
+romance	romance-generic	my soulmate	10303
+romance	romance-generic	my soulmate is	8695
+romance	romance-generic	my sunshine	7548
+romance	romance-generic	my crush	6699
+romance	romance-generic	my sweetie	6382
+romance	romance-generic	my lovee	5066
+romance	romance-generic	my luv	4805
+romance	romance-generic	my hunny	4648
+romance	romance-generic	my hun	3598
+romance	romance-generic	my baby love	2844
+romance	romance-generic	my true love	2642
+romance	romance-generic	my first love	2239
+romance	romance-generic	my one true love	2097
+romance	romance-generic	my beautiful lady	1671
+romance	romance-generic	my lovely lady	1621
+romance	romance-generic	my crush is	1447
+romance	romance-generic	my valentine is	1220
+romance	romance-generic	my long lost love	1206
+romance	romance-generic	my lesbian lover	1087
+romance	romance-generic	my only love	849
+romance	romance-generic	my beautiful love	817
+romance	romance-generic	my main thang	811
+romance	romance-generic	my perfect love	745
+romance	romance-generic	my favorite lady	742
+romance	romance-generic	my endless love	704
+romance	spouse	my wife	106401
+romance	spouse	my husband	45234
+romance	spouse	my hubby	24936
+romance	spouse	my wifey	22955
+romance	spouse	my beautiful wife	11189
+romance	spouse	my lovely wife	4564
+romance	spouse	my amazing wife	1894
+romance	spouse	my wife is	1733
+romance	spouse	my wonderful husband	1558
+romance	spouse	my wonderful wife	1487
+romance	spouse	my gorgeous wife	1451
+romance	spouse	my amazing husband	1403
+romance	spouse	my lovely husband	1195
+romance	spouse	my husband is	977
+romance	spouse	my beautiful wifey	945
+romance	spouse	my sexy wife	642
+romance/social	romance-generic	my bestest	7969
+romance/social	boyfriend/girlfriend	my girl	686766
+romance/social	boyfriend/girlfriend	my home girl	15541
+romance/social	boyfriend/girlfriend	my main girl	10576
+romance/social	boyfriend/girlfriend	my beautiful girl	9891
+romance/social	boyfriend/girlfriend	my favorite girl	7090
+romance/social	boyfriend/girlfriend	my gorgeous girl	3970
+romance/social	boyfriend/girlfriend	my fav girl	3729
+romance/social	boyfriend/girlfriend	my best girl	3629
+romance/social	boyfriend/girlfriend	my birthday girl	3358
+romance/social	boyfriend/girlfriend	my white girl	2934
+romance/social	boyfriend/girlfriend	my main gal	2733
+romance/social	boyfriend/girlfriend	my lovely girl	2592
+romance/social	boyfriend/girlfriend	my pretty girl	2190
+romance/social	boyfriend/girlfriend	my favourite girl	2171
+romance/social	boyfriend/girlfriend	my little girl	2004
+romance/social	boyfriend/girlfriend	my bby girl	1833
+romance/social	boyfriend/girlfriend	my fave girl	1565
+romance/social	boyfriend/girlfriend	my sweet girl	1561
+romance/social	boyfriend/girlfriend	my favorite white girl	1201
+romance/social	boyfriend/girlfriend	my amazing girl	1192
+romance/social	boyfriend/girlfriend	my best gal	1012
+romance/social	boyfriend/girlfriend	my beautiful baby girl	970
+romance/social	boyfriend/girlfriend	my girl is	924
+romance/social	boyfriend/girlfriend	my sexy girl	792
+romance/social	boyfriend/girlfriend	my dream girl	758
+romance/social	romance-generic	my bestiee	4623
+romance/social	romance-generic	my soul mate	2945
+romance/social	romance-generic	my beautiful bestie	2052
+romance/social	romance-generic	my bestie is	1710
+romance/social	romance-generic	my new bestie	1323
+romance/social	romance-generic	my twitter bestie	1141
+romance/social	romance-generic	my long lost bestie	1041
+romance/social	romance-generic	my home gurl	1597
+romance/social	romance-generic	my main dude	2326
+romance/social	romance-generic	my boo boo	9462
+romance/social	romance-generic	my bebe	9314
+romance/social	romance-generic	my shawty	8079
+romance/social	romance-generic	my booboo	7251
+romance/social	romance-generic	my cutie	7128
+romance/social	romance-generic	my babyy	6952
+romance/social	romance-generic	my lil baby	5448
+romance/social	romance-generic	my babyyy	5262
+romance/social	romance-generic	my little baby	4963
+romance/social	romance-generic	my shorty	4572
+romance/social	romance-generic	my baee	4089
+romance/social	romance-generic	my baby boo	3842
+romance/social	romance-generic	my lil boo	3291
+romance/social	romance-generic	my beautiful baby	2931
+romance/social	romance-generic	my baby is	1847
+romance/social	romance-generic	my lil shawty	1473
+romance/social	romance-generic	my lovesss	1426
+romance/social	romance-generic	my big baby	1305
+romance/social	romance-generic	my beautiful babe	1064
+romance/social	romance-generic	my poor baby	1007
+romance/social	romance-generic	my sweet baby	977
+romance/social	romance-generic	my bestie boo	915
+romance/social	romance-generic	my bae is	796
+romance/social	social-partner	my patna	4356
+social	best-friend	my best friend	518434
+social	best-friend	my bestfriend	360103
+social	best-friend	my best friends	180657
+social	best-friend	my bff	177270
+social	best-friend	my bestfriends	66282
+social	best-friend	my bffs	24939
+social	best-friend	my bestest friend	13816
+social	best-friend	my beautiful best friend	13317
+social	best-friend	my bffl	8724
+social	best-friend	my two best friends	7231
+social	best-friend	my beautiful bestfriend	6607
+social	best-friend	my best mate	6546
+social	best-friend	my best buds	6322
+social	best-friend	my bestest friends	5763
+social	best-friend	my bestfriend is	5593
+social	best-friend	my best friends are	5378
+social	best-friend	my best buddy	5020
+social	best-friend	my bestfriendd	4071
+social	best-friend	my long lost bff	3290
+social	best-friend	my bff is	3069
+social	best-friend	my best friend ever	2974
+social	best-friend	my dearest friends	2815
+social	best-friend	my new bff	2552
+social	best-friend	my long lost bestfriend	2532
+social	best-friend	my best mates	2499
+social	best-friend	my two bestfriends	2481
+social	best-friend	my new bestfriend	2480
+social	best-friend	my very best friends	2453
+social	best-friend	my bestest friend ever	2313
+social	best-friend	my amazing best friend	2299
+social	best-friend	my bestfriends are	2218
+social	best-friend	my gorgeous best friend	2151
+social	best-friend	my best buddies	2044
+social	best-friend	my beautiful best friends	1922
+social	best-friend	my best friend forever	1723
+social	best-friend	my best frand	1683
+social	best-friend	my 2 best friends	1595
+social	best-friend	my lovely best friend	1589
+social	best-friend	my best friends ever	1588
+social	best-friend	my beautiful bff	1388
+social	best-friend	my old bestfriend	1301
+social	best-friend	my gorgeous bestfriend	1204
+social	best-friend	my greatest friends	1179
+social	best-friend	my ex bestfriend	1088
+social	best-friend	my best fucking friend	1063
+social	best-friend	my lovely bestfriend	1018
+social	best-friend	my other best friend	1012
+social	best-friend	my amazing bestfriend	1005
+social	best-friend	my bffs are	841
+social	best-friend	my 2 bestfriends	817
+social	classmate	my classmate	4548
+social	classmate	my classmates	3754
+social	clique	my crew	25136
+social	clique	my squad	22215
+social	clique	my clique	14948
+social	clique	my teammates	11678
+social	clique	my teammate	8316
+social	clique	my team mates	1400
+social	clique	my team mate	1033
+social	friend	my friend	753876
+social	friend	my friends	338839
+social	friend	my homie	205067
+social	friend	my babies	147693
+social	friend	my buddy	113033
+social	friend	my loves	110557
+social	friend	my dawg	81107
+social	friend	my homies	80290
+social	friend	my good friend	77706
+social	friend	my besties	69203
+social	friend	my mate	47982
+social	friend	my pal	41098
+social	friend	my dear friend	32136
+social	friend	my new friend	22788
+social	friend	my mains	21442
+social	friend	my peeps	20231
+social	friend	my bud	19409
+social	friend	my boos	19357
+social	friend	my beautiful friend	19260
+social	friend	my pals	18962
+social	friend	my dawgs	18262
+social	friend	my buddies	18196
+social	friend	my good friends	17479
+social	friend	my lovely friend	15724
+social	friend	my dearest	15705
+social	friend	my lil homie	14351
+social	friend	my hoes	13692
+social	friend	my twitter friends	13399
+social	friend	my hoe	11914
+social	friend	my baes	11851
+social	friend	my big homie	11770
+social	friend	my new friends	10867
+social	friend	my long lost friend	10762
+social	friend	my buds	10525
+social	friend	my amazing friend	9589
+social	friend	my lovely friends	9228
+social	friend	my old friend	9155
+social	friend	my best bud	9099
+social	friend	my mates	8272
+social	friend	my fellow	7600
+social	friend	my thug	7321
+social	friend	my closest friends	7128
+social	friend	my dear friends	7027
+social	friend	my bbys	6860
+social	friend	my great friend	6669
+social	friend	my amazing friends	6512
+social	friend	my good buddy	6182
+social	friend	my babys	5935
+social	friend	my beautiful friends	5737
+social	friend	my awesome friend	5678
+social	friend	my good pal	5614
+social	friend	my hommie	5303
+social	friend	my main hoe	5295
+social	friend	my sweet friend	5281
+social	friend	my beloved friends	5233
+social	friend	my beloved friend	5058
+social	friend	my gorgeous friend	4806
+social	friend	my folks	4738
+social	friend	my best pal	4704
+social	friend	my dearest friend	4517
+social	friend	my twinn	4505
+social	friend	my awesome friends	4322
+social	friend	my tweeps	4273
+social	friend	my new best friend	4065
+social	friend	my wonderful friend	3865
+social	friend	my great friends	3470
+social	friend	my hommies	3431
+social	friend	my main hoes	3388
+social	friend	my real friends	3313
+social	friend	my oldest friends	2957
+social	friend	my good mate	2809
+social	friend	my true friends	2789
+social	friend	my very best friend	2750
+social	friend	my frnd	2615
+social	friend	my frands	2580
+social	friend	my old friends	2580
+social	friend	my best pals	2559
+social	friend	my luvs	2483
+social	friend	my very good friend	2449
+social	friend	my friends are	2439
+social	friend	my long time friend	2360
+social	friend	my wonderful friends	2357
+social	friend	my close friends	2339
+social	friend	my talented friend	2338
+social	friend	my close friend	2284
+social	friend	my only friend	2273
+social	friend	my pretty friend	2227
+social	friend	my main homie	2209
+social	friend	my old pal	2205
+social	friend	my big dawg	2137
+social	friend	my crazy friend	1927
+social	friend	my crazy friends	1883
+social	friend	my new buddy	1850
+social	friend	my twitter friend	1849
+social	friend	my sexy friend	1835
+social	friend	my long lost friends	1810
+social	friend	my childhood friend	1784
+social	friend	my honeys	1771
+social	friend	my cuddle buddy	1762
+social	friend	my new homie	1731
+social	friend	my birthday buddy	1703
+social	friend	my little homie	1698
+social	friend	my sweet friends	1684
+social	friend	my thugs	1638
+social	friend	my cute friend	1635
+social	friend	my friend is	1629
+social	friend	my lil homies	1586
+social	friend	my little friend	1569
+social	friend	my thunder buddy	1558
+social	friend	my main homies	1522
+social	friend	my little babies	1512
+social	friend	my oldest friend	1493
+social	friend	my lil buddy	1478
+social	friend	my special friend	1473
+social	friend	my only friends	1431
+social	friend	my two friends	1379
+social	friend	my two besties	1325
+social	friend	my little buddy	1321
+social	friend	my twitter buddy	1317
+social	friend	my gal pal	1288
+social	friend	my new tweeps	1280
+social	friend	my frnds	1267
+social	friend	my old mate	1262
+social	friend	my old buddy	1260
+social	friend	my big booty hoe	1246
+social	friend	my lil dawg	1198
+social	friend	my lil thug	1157
+social	friend	my gal pals	1144
+social	friend	my big homies	1128
+social	friend	my favorite peeps	1127
+social	friend	my hot friend	1084
+social	friend	my only friends are	1037
+social	friend	my fav peeps	1028
+social	friend	my only friend is	1003
+social	friend	my real friends are	984
+social	friend	my two babies	956
+social	friend	my gorgeous friends	918
+social	friend	my besties are	914
+social	friend	my good pals	903
+social	friend	my special friends	896
+social	friend	my young homie	861
+social	friend	my twitter besties	792
+social	friend	my brilliant friend	728
+social	friend	my sexy friends	569
+social	friend	my new twitter friends	428
+social	friend	my new peeps	348
+social	friend-aae	my nigga	889647
+social	friend-aae	my niggas	242852
+social	friend-aae	my lil nigga	16731
+social	friend-aae	my niggaz	14126
+social	friend-aae	my niggah	12903
+social	friend-aae	my nig	12746
+social	friend-aae	my nigg	8326
+social	friend-aae	my young nigga	7514
+social	friend-aae	my main nigga	7448
+social	friend-aae	my nigha	7081
+social	friend-aae	my niqqa	7005
+social	friend-aae	my real niggas	6964
+social	friend-aae	my nigguh	6653
+social	friend-aae	my nigga my nigga	5655
+social	friend-aae	my nigs	5124
+social	friend-aae	my main niggas	4735
+social	friend-aae	my niggs	4550
+social	friend-aae	my nicca	4195
+social	friend-aae	my real nigga	3665
+social	friend-aae	my mf nigga	3156
+social	friend-aae	my day 1 nigga	3127
+social	friend-aae	my young niggas	2397
+social	friend-aae	my day 1 niggas	2289
+social	friend-aae	my day one nigga	2203
+social	friend-aae	my lil niggas	2055
+social	friend-aae	my day one niggas	1989
+social	friend-aae	my little nigga	1974
+social	friend-aae	my nigguhs	1844
+social	friend-aae	my nighas	1754
+social	friend-aae	my niqqas	1704
+social	friend-aae	my yung nigga	1502
+social	friend-aae	my niggas my niggas	1233
+social	friend-female	my girls	509092
+social	friend-female	my babes	87902
+social	friend-female	my bitch	84484
+social	friend-female	my bitches	67555
+social	friend-female	my ladies	40018
+social	friend-female	my girlies	28008
+social	friend-female	my main bitch	24229
+social	friend-female	my homegirl	23037
+social	friend-female	my gals	17135
+social	friend-female	my main bitches	11914
+social	friend-female	my favorite girls	10232
+social	friend-female	my girlfriends	8069
+social	friend-female	my gurls	7130
+social	friend-female	my lovely ladies	6234
+social	friend-female	my girlie	6113
+social	friend-female	my bad bitch	5951
+social	friend-female	my main girls	5019
+social	friend-female	my fav girls	4721
+social	friend-female	my favorite ladies	4355
+social	friend-female	my beautiful girls	4235
+social	friend-female	my chick	4187
+social	friend-female	my bad bitches	3798
+social	friend-female	my bebes	3576
+social	friend-female	my best bitch	3414
+social	friend-female	my favourite girls	3330
+social	friend-female	my homegirls	3269
+social	friend-female	my best girls	3111
+social	friend-female	my main chick	3095
+social	friend-female	my beautiful ladies	2978
+social	friend-female	my baby girls	2557
+social	friend-female	my lovely girls	2534
+social	friend-female	my home girls	2494
+social	friend-female	my fave girls	2424
+social	friend-female	my fav ladies	1710
+social	friend-female	my two girls	1551
+social	friend-female	my gorgeous girls	1527
+social	friend-female	my two favorite girls	1509
+social	friend-female	my sexy ladies	1338
+social	friend-female	my women	1254
+social	friend-female	my pretty girls	1203
+social	friend-female	my main ladies	1097
+social	friend-female	my favorite bitches	1084
+social	friend-female	my favourite ladies	1082
+social	friend-female	my best bitches	1061
+social	friend-female	my favorite bitch	1007
+social	friend-female	my fave ladies	861
+social	friend-male	my boys	403177
+social	friend-male	my dude	200869
+social	friend-male	my mans	60553
+social	friend-male	my dudes	54412
+social	friend-male	my guys	40176
+social	friend-male	my manz	11425
+social	friend-male	my homeboy	11383
+social	friend-male	my boyz	8722
+social	friend-male	my goons	7066
+social	friend-male	my bois	5183
+social	friend-male	my favorite boys	4086
+social	friend-male	my men	2874
+social	friend-male	my boyfriends	2475
+social	friend-male	my homeboys	2379
+social	friend-male	my main men	2047
+social	friend-male	my favorite guys	1917
+social	friend-male	my main mans	1606
+social	friend-male	my fav boys	1448
+social	friend-male	my young boys	1294
+social	friend-male	my main boys	1257
+social	friend-male	my main dudes	1105
+social	friend-male	my home boys	1090
+social	friend-male	my two boys	825
+social	friend-male	my favourite boys	721
+social	friend-male	my fave boys	661
+social	neighbor	my neighbor	4751
+social	neighbor	my neighbors	1567
+social	roommate	my roommate	32836
+social	roommate	my roomie	26460
+social	roommate	my roomies	11263
+social	roommate	my roommates	10216
+None	social-other	my guest	2028
+None	social-partner	my partners	2259

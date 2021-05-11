@@ -1,0 +1,53 @@
+{
+  "architectures": [
+    "RobertaForSequenceClassification"
+  ],
+  "attention_probs_dropout_prob": 0.1,
+  "bos_token_id": 0,
+  "do_sample": false,
+  "eos_token_ids": 0,
+  "finetuning_task": null,
+  "hidden_act": "gelu",
+  "hidden_dropout_prob": 0.1,
+  "hidden_size": 768,
+  "id2label": {
+    "0": "social",
+    "1": "romance",
+    "2": "family",
+    "3": "organizational",
+    "4": "parasocial"
+  },
+  "initializer_range": 0.02,
+  "intermediate_size": 768,
+  "is_decoder": false,
+  "label2id": {
+    "social":"0",
+    "romance":"1",
+    "family":"2",
+    "organizational":"3",
+    "parasocial":"4"
+  },
+  "layer_norm_eps": 1e-05,
+  "length_penalty": 1.0,
+  "max_length": 64,
+  "max_position_embeddings": 3,
+  "model_type": "roberta",
+  "num_attention_heads": 3,
+  "num_beams": 1,
+  "num_hidden_layers": 3,
+  "num_labels": 2,
+  "num_return_sequences": 1,
+  "output_attentions": false,
+  "output_hidden_states": false,
+  "output_past": true,
+  "pad_token_id": 0,
+  "pruned_heads": {},
+  "repetition_penalty": 1.0,
+  "temperature": 1.0,
+  "top_k": 50,
+  "top_p": 1.0,
+  "torchscript": false,
+  "type_vocab_size": 1,
+  "use_bfloat16": false,
+  "vocab_size": 5
+}

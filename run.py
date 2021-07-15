@@ -1,7 +1,5 @@
 import argparse
 import os
-import random
-import numpy as np
 import torch
 import json
 from tqdm import tqdm
@@ -9,7 +7,7 @@ from torch.utils.data import DataLoader
 from model import ConcatenatedClassifier
 from data_loader import CustomDataset
 from transformers import (
-    AdamW,AutoTokenizer,set_seed,get_linear_schedule_with_warmup
+    AdamW,set_seed
 )
 import gc
 from transformers import get_linear_schedule_with_warmup

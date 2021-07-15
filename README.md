@@ -52,7 +52,8 @@ python download-pretrained-models.py
 
 ### 1. Update the credentials in `data/credentials.txt`.
 
-### 2. Create a list of Twitter dyads that you want to infer in `data/dyad-examples.txt`. Either the username (the name following @) or the user's ID number can be used, but they must be separated through a ','.
+### 2. Create a list of Twitter dyads that you want to infer in `data/dyad-examples.txt`. 
+Either the username (the name following @) or the user's ID number can be used, but they must be separated through a ','.
 
 ```
 Examples:

@@ -10,6 +10,7 @@ from transformers import (
     AdamW,set_seed
 )
 import gc
+import pandas as pd
 from transformers import get_linear_schedule_with_warmup
 from sklearn.metrics import f1_score, precision_score, recall_score
 
@@ -215,7 +216,6 @@ def train_bert(args):
 
 
 def infer_bert(args):
-    import pandas as pd
     assert os.path.exists(str(args.infer_data_file)),"The argument --infer_data_file should be a valid file"
     if torch.cuda.is_available():
         device = torch.device('cuda')

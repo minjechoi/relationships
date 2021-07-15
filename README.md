@@ -77,4 +77,4 @@ CUDA_VISIBLE_DEVICES=0 python run.py \
 The results will be stored in `data/sample_outputs.json-predictions.tsv`.
 
 ### Contact
-For questions, 
+For questions, please contact the main author via [minje@umich.edu]. Thanks!

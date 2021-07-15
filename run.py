@@ -4,15 +4,19 @@ import random
 import numpy as np
 import torch
 import json
-import gzip
 from tqdm import tqdm
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
 from model import ConcatenatedClassifier
 from data_loader import CustomDataset
+from transformers import (
+    AdamW,AutoTokenizer,set_seed,get_linear_schedule_with_warmup
+)
+import gc
+from transformers import get_linear_schedule_with_warmup
+from sklearn.metrics import f1_score, precision_score, recall_score
 
-def main():
-    print('pid: ',os.getpid())
+
+def arg_parser():
     parser = argparse.ArgumentParser()
 
     # directory hyperparameters
@@ -75,25 +79,21 @@ def main():
 
     args = parser.parse_args()
 
-    seed_val = args.seed
-    random.seed(seed_val)
-    np.random.seed(seed_val)
-    torch.manual_seed(seed_val)
-    torch.cuda.manual_seed_all(seed_val)
+    return args
 
-    # load data
+def main():
+    print('pid: ',os.getpid())
+
+    args = arg_parser()
+    set_seed(args.seed)
+
     if args.do_train:
-        # load script for getting bert data
         train_bert(args)
     if args.do_infer:
         infer_bert(args)
     return
 
 def train_bert(args):
-    from transformers import AdamW
-    import gc
-    from transformers import get_linear_schedule_with_warmup
-    from sklearn.metrics import f1_score, precision_score, recall_score
 
     assert os.path.exists(str(args.train_data_file)),"The argument --train_data_file should be a valid file"
     assert os.path.exists(str(args.val_data_file)),"The argument --val_train_data_file should be a valid file"
@@ -129,7 +129,7 @@ def train_bert(args):
              max_samples=args.max_samples)
     val_data_loader = DataLoader(val_dataset, batch_size=args.batch_size*4, shuffle=False, num_workers=4, collate_fn=train_dataset.collate_fn)
 
-    print("Starting evaluation")
+    print("Starting training")
     save_dir = args.output_dir # create save directory to store models and training loss
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -153,7 +153,7 @@ def train_bert(args):
         # For each batch of training data...
         pbar = tqdm(train_data_loader)
         for step,batch in enumerate(pbar):
-            # validate
+            # validation step
             if total_steps % args.valid_interval == 0 and not total_steps == 0:
                 gc.collect()
                 torch.cuda.empty_cache()
@@ -244,7 +244,7 @@ def infer_bert(args):
     data_loader = DataLoader(dataset, batch_size=args.batch_size*4, shuffle=False, num_workers=4, collate_fn=dataset.collate_fn)
 
     print("Starting evaluation")
-    save_dir = args.output_dir # create save directory to store models and training loss
+    save_dir = args.output_dir # create save directory to store output files
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 

@@ -63,7 +63,8 @@ user_id1,user_id2
 user_id3,username3
 ```
 
-### 3. Download their interactions by running `python collect-from-twitter.py`. The interactions will be stored in `data/sample_outputs.json`.
+### 3. Download their interactions by running `python collect-from-twitter.py`. 
+The interactions will be stored in `data/sample_outputs.json`.
 
 ### 4. Infer the relationships with the model using the following code. 
 ```

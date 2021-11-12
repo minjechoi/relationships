@@ -160,9 +160,10 @@ class ConcatenatedClassifier(nn.Module):
         concat_hidden = torch.stack(concat_hidden, 0)
         concat_masks = torch.tensor(concat_masks).to(self.device)
         position_ids = torch.tensor(position_ids).to(self.device)
+        token_type_ids = torch.zeros_like(position_ids).to(self.device)
 
         # second model: get vector representation of all text features
-        hidden_2 = self.concat_model(inputs_embeds=concat_hidden, attention_mask=concat_masks, position_ids=position_ids)[0]
+        hidden_2 = self.concat_model(inputs_embeds=concat_hidden, attention_mask=concat_masks, position_ids=position_ids, token_type_ids=token_type_ids)[0]
         hidden_2 = hidden_2[:,0] # batch x 768
 
         # third model: concatenate with existing features, then classify

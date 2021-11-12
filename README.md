@@ -17,8 +17,8 @@ If using the package for research, please use the following citation:
 
 This code was tested under the following package dependencies. The package versions do not have to be exact.
 
-- pytorch==1.8.1
-- transformers==4.5.1
+- pytorch==1.10.0
+- transformers==4.9.2
 - tokenizers==0.10.1
 - tweepy==3.10.0
 - tqdm==4.49.0

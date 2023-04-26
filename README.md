@@ -41,7 +41,7 @@ CUDA_VISIBLE_DEVICES=0 python run.py \
 ```
 
 
-## Inferencing relationship types using Twitter API
+## Inferencing relationship types from tweets collected via the Twitter API
 We provide methods for inferring the relationships between any two Twitter users, provided that both of their tweet information is available by the Twitter API.
 You will need to have an application of the Twitter API [(link)](https://developer.twitter.com/en/docs/twitter-api).
 

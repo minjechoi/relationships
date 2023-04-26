@@ -65,7 +65,7 @@ You have to change the data as the same format as `data/train-data-camera-ready.
 CUDA_VISIBLE_DEVICES=0 python run.py \
     --do_predict --predict_batch_size=16 --accelerator gpu \
     --use_public_mention --use_direct_mention --use_retweet \
-    --use_bio --use_activity --use_count \
+    --use_bio --use_activity --use_count --use_network \
     --predict_data_file FILE_PATH_OF_INPUT_FILE \
     --save_file=FILE_PATH_OF_OUTPUT_FILE_CONTAINING_INFERRED_SCORES \
     --ckpt_path=FILE_PATH_OF_PRETRAINED_MODEL

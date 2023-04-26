@@ -1,6 +1,6 @@
 import argparse
-from pl_model import RelationshipClassifier
-from pl_dataloader import RelationshipClassificationDataModule
+from model import RelationshipClassifier
+from data_loader import RelationshipClassificationDataModule
 from pytorch_lightning import Trainer
 import os
 from os.path import join
@@ -168,18 +168,20 @@ if __name__=='__main__':
         # 16hrs to go through one epoch -> maybe better to do validations like every 10 hrs?
 
     if args.setting=='test':
-        args.save_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/results.json'
+        args.save_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/all_features_3plus/results.json'
+        # args.save_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/results.json'
         args.train_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/test_3plus.json.gz'
         args.test_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/test_3plus.json.gz'
         args.val_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz'
-        args.ckpt_path='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/checkpoint-epoch=2-val_f1=0.703-val_acc=0.717-val_loss=0.854.ckpt'
+        args.ckpt_path='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/all_features_3plus/checkpoint-epoch=2-val_f1=0.700-val_acc=0.714-val_loss=0.843.ckpt'
+        # args.ckpt_path='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/checkpoint-epoch=2-val_f1=0.703-val_acc=0.717-val_loss=0.854.ckpt'
         args.use_public_mention = True
         args.use_direct_mention = True
         args.use_retweet = True
         args.use_bio = True
         args.use_activity = True
         args.use_count = True
-        args.use_network = False
+        args.use_network = True
         args.precision = 16
         args.accelerator = 'gpu'
         args.test_batch_size = 64

@@ -1,203 +1,353 @@
-import torch
-from torch.utils.data import Dataset,DataLoader
+from pytorch_lightning import LightningDataModule
+import os
+from os.path import join
+import gzip
 import json
-from random import sample
-from tqdm import tqdm
-from time import time
+import re
+import torch
+from torch.utils.data import Dataset, DataLoader
+from sklearn.utils import resample
 from transformers import AutoTokenizer
+import pandas as pd
+import numpy as np
 
-class CustomDataset(Dataset):
-    def __init__(self, data_list, task_type, use_pm=False, use_dm=False, use_rt=False, use_bio=False, use_name=False,
-                 use_network=False, use_count=False, max_samples=20):
-
-        """
-        A Dataset class for dealing with all the texts in this model
-        :param data_list: a list where each sample is a dictionary object containing the information of a dyad required for classifying relationships
-
-        Arguments for which features to include
-        :param task_type: Whether the task is "train", "eval" or "infer"
-        :param use_pm: If true, include public mention messages in the model
-        :param use_dm: If true, include directed messages in the model
-        :param use_rt: If true, include retweets in the model
-        :param use_bio: If true, include bio of the two users as additional information
-        :param use_name: If true, include information from the names of the two users as additional information
-        :param use_network: If true, include the network features (jaccard similarity & adamic-adar) of the two users
-        :param use_count: If true, include the distribution of the tweet types for each user (ratio of direct mentions / public mentions / replies)
-
-        Arguments for which number of tweets to include
-        :param max_samples: If the number of available tweets exceed this number, sample to this number
-        """
-        assert task_type in ['train','test','infer'], "The argument 'task_type' should either be 'train', 'eval', or 'infer'"
-        self.task_type = task_type
-        self.use_pm = use_pm
-        self.use_dm = use_dm
-        self.use_rt = use_rt
-        self.use_bio = use_bio
-        self.use_name = use_name
-        if self.use_name:
-            self.char2idx={}
-            with open('data/char2idx.tsv') as f:
-                for ln, line in enumerate(f):
-                    self.char2idx[line.split()[0]] = ln
-        self.use_network = use_network
-        self.use_count = use_count
-        self.max_samples = max_samples
-        self.dyad_ids = []
-
-        self.process_data_file(data_list)
-
-        self.tokenizer = AutoTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
-
-
-    def process_data_file(self, data_list):
-        start = time()
-        self.data = []
-        # load text and bio from the tokenized file
-        pbar = tqdm(data_list)
-        for obj in pbar:
-            self.dyad_ids.append((obj['aid'],obj['bid'])) # append id pairs to
-            out_obj={'text':[]}
-
-            if self.task_type!='infer':
-                out_obj['label'] = ['social','romance','family','organizational','parasocial'].index(obj['category'])
-            if self.use_bio:
-                out_obj['bio']=[]
-            if self.use_name:
-                out_obj['name']=[]
-            if self.use_count:
-                out_obj['count_norm']=[]
-
-            """
-            For each data sample, append the position index
-            1) tweet types for user A (0,1,2) and user B (3,4,5)
-            2) description bio for user A (6) and user B (7)
-            3) screen name and full name for user A (8,9) and user B (10,11)
-            """
-
-            for i,user in enumerate(['a_data', 'b_data']):
-                # add text data
-                text_samples = []
-                for j,(flag,tweet_type) in enumerate(zip([self.use_pm,self.use_dm,self.use_rt],['public-mention','direct-mention','retweets'])):
-                    if flag:
-                        for tweet in obj[user][tweet_type]:
-                            text_samples.append((i*3+j,tweet))
-                if len(text_samples)>self.max_samples:
-                    text_samples = sample(text_samples,self.max_samples)
-                out_obj['text'].extend(text_samples)
-
-                # add bio
-                if self.use_bio:
-                    out_obj['bio'].append((6+i,obj[user]['bio']))
-
-                # add name
-                if self.use_name:
-                    for j,name in enumerate(obj[user]['name']):
-                        out_obj['name'].append((8+2*i+j,name))
-
-                # add counts
-                if self.use_count:
-                    out_obj['count_norm'].append(obj[user]['count_norm'])
-
-            # add networks
-            if self.use_network:
-                out_obj['network']=obj['network']
-
-            self.data.append(out_obj)
-            pbar.set_description("Loading data...")
-
-        print('%d seconds to load %d lines!' % (int(time() - start), len(self.data)))
-        # get training dataset distribution
-        print("%d samples"%len(self.data))
+class DefaultDataset(Dataset):
+    def __init__(self, data):
+        self.data = data
         return
+
+    def __getitem__(self, idx):
+        obj = self.data[idx]
+        return obj
 
     def __len__(self):
         return len(self.data)
 
-    def __getitem__(self, idx):
-        return self.data[idx]
+class RelationshipClassificationDataModule(LightningDataModule):
+    def __init__(self,
+        # paths to directory
+        # train_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/train_3plus.json.gz',
+        # test_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/test_3plus.json.gz',
+        # val_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz',
+        # predict_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz',
+        train_data_file,
+        test_data_file,
+        val_data_file,
+        predict_data_file,
+        # paths to components of model
+        # language_model_name_or_path='cardiffnlp/twitter-roberta-base-sentiment',
+        # language_model_cache_dir='/shared/0/projects/relationships/.cache/huggingface/transformers',
+        # feature_bin_file_dir='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/features/feature_bins.csv',
+        language_model_name_or_path,
+        language_model_cache_dir,
+        feature_bin_file_dir,
 
-    def collate_fn(self,sample_list):
-        out_obj={}
-        texts = [] # stacked version of all texts
-        tweet_positions = [] # stacked version of all position encodings for text
-        n_samples = [] # contains the number of tweets per each dyad
-        if self.task_type!='infer':
-            labels = [obj['label'] for obj in sample_list]
-            out_obj['labels']=labels
-        for obj in sample_list:
-            # process text
-            tweet_positions.extend([x[0] for x in obj['text']])
-            texts.extend([x[1] for x in obj['text']])
-            n_samples.append(len(obj['text']))
-        enc = self.tokenizer(text=texts, padding='longest', truncation=True, max_length=64)
-        tweet_input_ids, tweet_masks = torch.tensor(enc['input_ids']), torch.tensor(enc['attention_mask'])
-        out_obj['tweet']=(tweet_input_ids,tweet_masks,n_samples,tweet_positions)
+        # feature settings
+        use_public_mention,
+        use_direct_mention,
+        use_retweet,
+        use_bio,
+        use_activity,
+        use_count,
+        use_network,
 
-        if self.use_bio:
-            bios = []
-            bio_positions = []
-            n_samples = []
-            for obj in sample_list:
-                bio_positions.append([x[0] for x in obj['bio']])
-                bios.extend([x[1] for x in obj['bio']])
-                n_samples.append(2)
-            enc = self.tokenizer(text=bios, padding='longest', truncation=True, max_length=64)
-            bio_input_ids,bio_masks = torch.tensor(enc['input_ids']), torch.tensor(enc['attention_mask'])
-            out_obj['bio']=(bio_input_ids,bio_masks,n_samples,bio_positions)
+        # settings related to dataset
+        balance_training_set,
+        train_batch_size,
+        eval_batch_size,
+        num_workers, # for temporary debugging purposes
+        max_length,
+        **kwargs):
+        super().__init__()
+        self.save_hyperparameters()
+        self.tokenizer = AutoTokenizer.from_pretrained(language_model_name_or_path,
+                               cache_dir=language_model_cache_dir)
+        self.category2idx={cat:i for i,cat in enumerate(['social','romance',
+                                 'family','organizational','parasocial'])}
 
-        if self.use_name:
-            names = []
-            name_positions = []
-            for obj in sample_list:
-                name_positions.append([x[0] for x in obj['name']])
-                names.extend([x[1] for x in obj['name']])
-            max_ln = min(30, max([len(v) for v in names]))
-            names_out = []
-            unk_token = 300
-            pad_token = 301
-            for name in names:
-                name2 = []
-                for c in list(name):
-                    if c in self.char2idx:
-                        c = self.char2idx[c]
-                        if c > unk_token:
-                            c = unk_token
-                    else:
-                        c = unk_token
-                    name2.append(c)
-                if len(name2) > max_ln:
-                    name2 = name2[:max_ln]
-                else:
-                    name2 = name2 + [pad_token] * (max_ln - len(name2))
-                names_out.append(name2)
-            enc = torch.tensor(names_out)
-            out_obj['name']=(enc,name_positions)
+        # position embedding index for each feature type
+        self.feature2pos_idx={}
+        cnt = 0
+        for user in ['a_data','b_data']:
+            for typ in ['public-mention','direct-mention','retweet']:
+                self.feature2pos_idx[(user,typ)] = [cnt]
+                cnt += 1
+            self.feature2pos_idx[(user,'bio')] = [cnt]
+            cnt+=1
+            self.feature2pos_idx[(user,'activity')] = [x for x in range(cnt,cnt+3)]
+            cnt+=3
+            self.feature2pos_idx[(user, 'count')] = [x for x in range(cnt,cnt+6)]
+            cnt+=6
+        self.feature2pos_idx['network'] = [cnt,cnt+1]
 
-        if (self.use_network)|(self.use_count):
-            net_out = []
-            for i, obj in enumerate(sample_list):
-                net_tmp = []
-                if self.use_network:
-                    net_tmp.extend(obj['network'])
-                if self.use_count:
-                    for count_norm in obj['count_norm']:
-                        net_tmp.extend(count_norm)
-                net_out.append(net_tmp)
-            out_obj['etc']=torch.tensor(net_out)
+        # for idx,col in enumerate(['friends_count','followers_count', 'statuses_count',
+        #     'num_pm', 'num_dm', 'num_rt', 'frac_pm', 'frac_dm', 'frac_rt',
+        #     'net_jacc','net_aa']):
 
-        return out_obj
+        # load feature bins
+        # binned feature embedding index for numerical features
+        self.feature2bins={}
+        self.feature2emb_idx = {}
+        with open(feature_bin_file_dir) as f:
+            for i,line in enumerate(f):
+                line=line.strip().split(',')
+                col = line[0]
+                bins=[float(x) for x in line[2:]]
+                bins[0]=-np.inf
+                bins.append(np.inf)
+                self.feature2bins[col]=bins
+                self.feature2emb_idx[col]=i
+
+    def add_model_specific_args(parent_parser):
+        parser = parent_parser.add_argument_group("RelationshipClassificationDataModule")
+        parser.add_argument("--train_data_file", type=str, default=None)
+        parser.add_argument("--test_data_file", type=str, default=None)
+        parser.add_argument("--val_data_file", type=str, default=None)
+        parser.add_argument("--predict_data_file", type=str, default=None)
+        # components of model
+        parser.add_argument("--language_model_name_or_path", type=str, default='cardiffnlp/twitter-roberta-base-sentiment')
+        parser.add_argument("--language_model_cache_dir", type=str, default='/shared/0/projects/relationships/.cache/huggingface/transformers')
+        parser.add_argument("--feature_bin_file_dir", type=str, default='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/features/feature_bins.csv')
+        # feature settings
+        parser.add_argument("--use_public_mention", action='store_true')
+        parser.add_argument("--use_direct_mention", action='store_true')
+        parser.add_argument("--use_retweet", action='store_true')
+        parser.add_argument("--use_bio", action='store_true')
+        parser.add_argument("--use_name", action='store_true')
+        parser.add_argument("--use_network", action='store_true')
+        # settings related to dataset size
+        parser.add_argument("--balance_training_set", action='store_true')
+        parser.add_argument("--train_batch_size", type=int, default=4)
+        parser.add_argument("--eval_batch_size", type=int, default=8)
+        parser.add_argument("--num_workers", type=int, default=4)
+        parser.add_argument("--max_length", type=int, default=512)
+        return parent_parser
+
+
+    def setup(self, stage=None):
+        self.datasets = {}
+        if stage in ['fit', None]:
+            self.train_data = []
+            with gzip.open(self.hparams.train_data_file, 'rb') as f:
+                for line in f:
+                    obj = json.loads(line.decode('utf-8'))
+                    self.train_data.append(obj)
+            if self.hparams.balance_training_set:
+                self.upsample_training_set()
+            self.datasets['train'] = DefaultDataset(self.train_data)
+
+            self.val_data = []
+            with gzip.open(self.hparams.val_data_file, 'rb') as f:
+                for line in f:
+                    obj = json.loads(line.decode('utf-8'))
+                    self.val_data.append(obj)
+            self.datasets['val'] = DefaultDataset(self.val_data)
+
+        if stage in ['test',None]:
+            self.test_data = []
+            with gzip.open(self.hparams.test_data_file, 'rb') as f:
+                for line in f:
+                    obj = json.loads(line.decode('utf-8'))
+                    self.test_data.append(obj)
+            self.datasets['test'] = DefaultDataset(self.test_data)
+
+        if stage in ['predict']:
+            self.predict_data = []
+            with gzip.open(self.hparams.predict_data_file, 'rb') as f:
+                for line in f:
+                    obj = json.loads(line.decode('utf-8'))
+                    self.predict_data.append(obj)
+            self.datasets['predict'] = DefaultDataset(self.predict_data)
+
+    def upsample_training_set(self):
+        # upsamples minority classes to match the majority class
+        cat2samples = {}
+        for obj in self.train_data:
+            label = obj['category']
+            if label not in cat2samples:
+                cat2samples[label]=[]
+            cat2samples[label].append(obj)
+        # get counts
+        max_ln = max([len(V) for cat,V in cat2samples.items()])
+        self.train_data = []
+        for label,V in cat2samples.items():
+            if len(V)==max_ln:
+                self.train_data.extend(V)
+            else:
+                self.train_data.extend(resample(V,replace=True,n_samples=max_ln))
+        return
+
+    def train_dataloader(self):
+        return DataLoader(self.datasets['train'], shuffle=True,
+              num_workers=self.hparams.num_workers,
+              collate_fn=self.collate_fn,
+              batch_size=self.hparams.train_batch_size,
+              pin_memory=True)
+
+    def val_dataloader(self):
+        return DataLoader(self.datasets['val'], shuffle=False,
+              num_workers=self.hparams.num_workers,
+              collate_fn=self.collate_fn,
+              batch_size=self.hparams.eval_batch_size,
+              pin_memory=True)
+
+    def test_dataloader(self):
+        return DataLoader(self.datasets['test'], shuffle=False,
+            num_workers=self.hparams.num_workers,
+            collate_fn=self.collate_fn,
+            batch_size=self.hparams.eval_batch_size,
+            pin_memory = True)
+
+    def predict_dataloader(self):
+        return DataLoader(self.datasets['predict'], shuffle=False,
+            num_workers=self.hparams.num_workers,
+            collate_fn=self.collate_fn,
+            batch_size=self.hparams.predict_batch_size,
+            pin_memory = True)
+
+    def collate_fn(self, batch):
+        output = {}
+
+        # encode various texts
+        if self.hparams.use_public_mention | \
+            self.hparams.use_direct_mention | \
+            self.hparams.use_retweet | \
+            self.hparams.use_bio:
+            sentences = []
+            sentence_pos_idx = []
+
+            tweet_types = []
+            if self.hparams.use_public_mention:
+                tweet_types.append('public-mention')
+            if self.hparams.use_direct_mention:
+                tweet_types.append('direct-mention')
+            if self.hparams.use_retweet:
+                tweet_types.append('retweet')
+
+            for dyad_idx, dyad in enumerate(batch):
+                for user in ['a_data','b_data']:
+
+                    for typ in tweet_types:
+                        tweets = dyad[user][typ]
+                        # if len(tweets)>5:
+                        #     tweets = resample(tweets,replace=False,n_samples=5)
+                        sentences.append(' '.join(tweets))
+                        sentence_pos_idx.append((dyad_idx,self.feature2pos_idx[(user,typ)][0]))
+
+                    if self.hparams.use_bio:
+                        bio = dyad[user]['bio']
+                        bio = bio if bio else ''
+                        name = ' '.join(dyad[user]['name'])
+                        bio_text = name+' '+bio
+                        sentences.append(bio_text)
+                        sentence_pos_idx.append((dyad_idx,
+                             self.feature2pos_idx[(user,'bio')][0]))
+
+            # encode text
+            text_output = self.tokenizer.batch_encode_plus(
+                sentences,
+                max_length=self.hparams.max_length,
+                padding='max_length',
+                # padding='longest',
+                truncation='longest_first',
+                return_length=False)
+            for k,v in text_output.items():
+                output[k]=v
+            output['text_pos_idx'] = sentence_pos_idx
+
+        # add other features
+        if self.hparams.use_activity | \
+            self.hparams.use_count | \
+            self.hparams.use_network:
+
+            columns = [] # gets column names
+            feat_emb_idx = [] # for identifying which embedding matrix to use
+            feat_pos_idx = [] # gets position embedding index
+            # get column names and embedding indices
+            for c,user in zip(['a:','b:'],['a_data','b_data']):
+                if self.hparams.use_activity:
+                    subcolumns=['friends_count','followers_count','statuses_count']
+                    columns.extend([c+col for col in subcolumns])
+                    feat_emb_idx.extend([self.feature2emb_idx[col] for col in subcolumns])
+                    feat_pos_idx.extend(self.feature2pos_idx[(user,'activity')])
+
+                if self.hparams.use_count:
+                    subcolumns = ['num_pm','num_dm','num_rt','frac_pm','frac_dm','frac_rt']
+                    columns.extend([c+col for col in subcolumns])
+                    feat_emb_idx.extend([self.feature2emb_idx[col] for col in subcolumns])
+                    feat_pos_idx.extend(self.feature2pos_idx[(user, 'count')])
+
+            if self.hparams.use_network:
+                subcolumns=['net_jacc','net_aa']
+                columns.extend(subcolumns)
+                feat_emb_idx.extend([self.feature2emb_idx[col] for col in subcolumns])
+                feat_pos_idx.extend(self.feature2pos_idx['network'])
+
+            # collect data for each feature type
+            raw_features = [] # matrix that stores the raw features
+            for dyad_idx,dyad in enumerate(batch):
+                tmp_arr = []
+                for user in ['a_data', 'b_data']:
+                    if self.hparams.use_activity:
+                        tmp_arr.extend(dyad[user]['activity'])
+                    if self.hparams.use_count:
+                        cnt_arr = np.array([len(dyad[user][typ]) for typ in ['public-mention',
+                                                                             'direct-mention',
+                                                                             'retweet']])
+                        cnt_arr_norm = cnt_arr/max(1.0,cnt_arr.sum())
+                        tmp_arr.extend(cnt_arr.tolist()+cnt_arr_norm.tolist())
+                if self.hparams.use_network:
+                    tmp_arr.extend(dyad['network'])
+
+                raw_features.append(tmp_arr)
+
+            # convert to binned results
+            df=pd.DataFrame(raw_features,columns=columns)
+            # print(df)
+            for i,col in enumerate(columns):
+                bins=self.feature2bins[col.split(':')[-1]]
+                # print(i,col,len(bins))
+                df[col] = pd.cut(df[col],
+                    bins=bins,
+                    labels=list(range(len(bins)-1)),
+                    include_lowest=True)
+            # binned_features = df.to_numpy()
+            binned_features = df.to_numpy(dtype=int)
+            # print(binned_features)
+            # print(binned_features.dtype)
+
+            # add to output
+            output['features_binned'] = binned_features
+            output['features_pos_idx'] = feat_pos_idx
+            output['features_emb_idx'] = feat_emb_idx
+
+        output['labels']=[self.category2idx[dyad['category']] for dyad in batch]
+
+        for k,v in output.items():
+            # print(k,v)
+            # print(k)
+            # if k=='features_binned':
+            #     print(v)
+            output[k]=torch.tensor(v)
+        return output
 
 if __name__=='__main__':
-    # test custom loader
-    out=[]
-    with open('data/sample_outputs.json') as f:
-        for line in f:
-            obj=json.loads(line)
-            out.append(obj)
+    # snippet to test if dataloader worksß
 
-    dataset = CustomDataset(data_list=out,task_type='infer',use_pm=True,use_dm=True,use_rt=True,use_bio=True,use_name=True,use_network=True,use_count=True,max_samples=20)
-    print(dataset.data[0])
-
-    dataloader = DataLoader(dataset, batch_size=16,shuffle=False, num_workers=4, collate_fn=dataset.collate_fn)
-    obj = next(iter(dataloader))
-    print(obj)
+    dm = RelationshipClassificationDataModule(
+        train_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz',
+        val_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz',
+        balance_training_set=True,
+        use_public_mention=True,
+        use_direct_mention=True,
+        use_retweet=True,
+        use_bio=True,
+        use_activity=True,
+        use_count=True,
+        use_network=True
+    )
+    dm.setup(stage='fit')
+    batch=next(iter(dm.train_dataloader()))
+    print(batch)
+    for k,v in batch.items():
+        print(k,v.size())

@@ -1,291 +1,219 @@
 import argparse
+from pl_model import RelationshipClassifier
+from pl_dataloader import RelationshipClassificationDataModule
+from pytorch_lightning import Trainer
 import os
-import torch
+from os.path import join
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
+from pytorch_lightning import loggers as pl_loggers
 import json
-from tqdm import tqdm
-from torch.utils.data import DataLoader
-from model import ConcatenatedClassifier
-from data_loader import CustomDataset
-from transformers import (
-    AdamW,set_seed
-)
-import gc
 import pandas as pd
-from transformers import get_linear_schedule_with_warmup
-from sklearn.metrics import f1_score, precision_score, recall_score
+from typing import Optional, Tuple, Union
 
+def train(args):
+    # load logger
+    dict_args = vars(args)
+    print(os.getpid())
+    tb_logger = pl_loggers.TensorBoardLogger(
+        save_dir=args.default_root_dir)
 
-def arg_parser():
-    parser = argparse.ArgumentParser()
+    # load dataset
+    dm = RelationshipClassificationDataModule(**dict_args)
 
-    # directory hyperparameters
-    parser.add_argument(
-        "--train_data_file", default=None, type=str, help="The file containing training data"
-    )
-    parser.add_argument(
-        "--val_data_file", default=None, type=str, help="The file containing validation data"
-    )
-    parser.add_argument(
-        "--test_data_file", default=None, type=str, help="The file containing test data"
-    )
-    parser.add_argument(
-        "--infer_data_file", default=None, type=str, help="The file containing infer data"
-    )
-    parser.add_argument(
-        "--output_dir", type=str,required=True,help="The output directory where the model predictions and checkpoints will be written.",
-    )
-    parser.add_argument(
-        "--classifier_config_dir", default='data/', type=str, help="File directory containing config.json for the classifier"
-    )
-    parser.add_argument(
-        "--model_dir", default=None, type=str,
-        help="Path to the actual pickle for for the trained classifier model"
+    # create callbacks
+    checkpoint_callback = ModelCheckpoint(
+        save_top_k=1,
+        monitor="val_f1",
+        mode="max",
+        dirpath=args.default_root_dir,
+        save_weights_only=True,
+        filename="checkpoint-{epoch}-{val_f1:.3f}-{val_acc:.3f}-{val_loss:.3f}",
+        every_n_epochs=1,
     )
 
-    # script-related hyperparameters
-    parser.add_argument("--do_train", action="store_true", help="Whether to run training.")
-    parser.add_argument("--do_test", action="store_true", help="Whether to run evaluation on the test set.")
-    parser.add_argument("--do_infer", action="store_true", help="Whether to run inference on an unknown set of dyads")
-
-    # model & data hyperparameters
-    parser.add_argument("--use_pm", action="store_true", help="whether to consider public mentions in training")
-    parser.add_argument("--use_dm", action="store_true", help="whether to consider directed mentions in training")
-    parser.add_argument("--use_rt", action="store_true", help="whether to consider retweets in training")
-    parser.add_argument("--use_bio", action="store_true", help="whether to consider bio information of the two users in training (loads an additional model for processing description text)")
-    parser.add_argument("--use_name", action="store_true", help="whether to consider the username information of two users in training (loads an additional model for character embeddings)")
-    parser.add_argument("--use_count", action="store_true", help="whether to consider the ratio of tweets/retweets")
-    parser.add_argument("--use_network", action="store_true", help="whether to consider network features")
-
-    parser.add_argument("--min_samples", default=0, type=int, help='Minimum number of samples to be considered into the training set')
-    parser.add_argument("--max_samples", default=20, type=int, help='Maximum number of samples to be considered into the training set, sample if exceeds')
-    parser.add_argument("--n_clf_layers", default=6, type=int, help='Custom number of layers to be used in the classifier')
-
-    parser.add_argument("--checkpoint_interval", default=10000, type=int,help="Interval for saving checkpoints")
-    parser.add_argument("--valid_interval", default=10000, type=int,help="Interval for running validation")
-
-    parser.add_argument("--batch_size", default=4, type=int,help="Batch size")
-    parser.add_argument("--lr", default=1e-5, type=float,help="Learning rate for the model")
-    parser.add_argument("--n_epochs", default=5, type=int,help="Number of epochs to run")
-
-    parser.add_argument("--eps", default=1e-8, type=float,help="Hyperparameter for optimizer in training phase")
-    parser.add_argument("--max_grad_norm", default=1.0, type=float,help="Hyperparameter for optimizer in training phase")
-    parser.add_argument("--num_warmup_steps", default=1000, help="Hyperparameter for optimizer in training phase")
-
-    # other hyperparameters
-    parser.add_argument("--start_from", default=None, type=int, help="Checkpoint to start from")
-    parser.add_argument("--gpu_id", default=None, type=int,help="GPU id to use (optional)")
-    parser.add_argument("--seed", default=42, type=int,help="Seed to use for reproducibility")
-
-    args = parser.parse_args()
-
-    return args
-
-def main():
-    print('pid: ',os.getpid())
-
-    args = arg_parser()
-    set_seed(args.seed)
-
-    if args.do_train:
-        train_bert(args)
-    if args.do_infer:
-        infer_bert(args)
-    return
-
-def train_bert(args):
-
-    assert os.path.exists(str(args.train_data_file)),"The argument --train_data_file should be a valid file"
-    assert os.path.exists(str(args.val_data_file)),"The argument --val_train_data_file should be a valid file"
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cpu')
+    early_stop_callback = EarlyStopping(
+        monitor='val_f1',
+        min_delta=0.0,
+        patience=3,
+        verbose=False,
+        mode='max'
+    )
 
     # load model
-    cc = ConcatenatedClassifier(classifier_config_dir=args.classifier_config_dir, device=device, task_type='train', n_clf_layers=args.n_clf_layers,
-                                use_dm=args.use_dm, use_pm=args.use_pm, use_rt=args.use_rt, use_bio=args.use_bio, use_name=args.use_name,
-                                use_network=args.use_network, use_count=args.use_count)
-    cc.to(device)
+    model = RelationshipClassifier(**dict_args)
 
-    # load data
-    train_data = []
-    with open(args.train_data_file) as f:
-        for line in f:
-            train_data.append(json.loads(line))
-    val_data = []
-    with open(args.val_data_file) as f:
-        for line in f:
-            val_data.append(json.loads(line))
+    trainer = Trainer.from_argparse_args(args, logger=tb_logger,
+                callbacks=[checkpoint_callback, early_stop_callback])
 
-    train_dataset = CustomDataset(data_list=train_data, task_type='train',
-             use_pm=args.use_pm, use_dm=args.use_dm, use_rt=args.use_rt, use_bio=args.use_bio,
-             use_network=args.use_network, use_count=args.use_count, use_name=args.use_name,
-             max_samples=args.max_samples)
-    train_data_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, collate_fn=train_dataset.collate_fn)
-    val_dataset = CustomDataset(data_list=val_data, task_type='test',
-             use_pm=args.use_pm, use_dm=args.use_dm, use_rt=args.use_rt, use_bio=args.use_bio,
-             use_network=args.use_network, use_count=args.use_count, use_name=args.use_name,
-             max_samples=args.max_samples)
-    val_data_loader = DataLoader(val_dataset, batch_size=args.batch_size*4, shuffle=False, num_workers=4, collate_fn=train_dataset.collate_fn)
+    # trainer = Trainer(
+    #     max_epochs=hparams.max_epochs,
+    #     max_steps=hparams.max_steps,
+    #     accelerator=accelerator,
+    #     devices=available_gpus,
+    #     # profiler='simple',
+    #     default_root_dir=hparams.save_path,
+    #     log_every_n_steps=hparams.logging_steps,
+    #     # limit_train_batches=hparams.limit_train_batches,
+    #     limit_val_batches=hparams.limit_val_batches,
+    #     # limit_test_batches=hparams.limit_test_batches,
+    #     check_val_every_n_epoch=1,
+    #     # check_val_every_n_epoch=check_val_every_n_epoch,
+    #     # val_check_interval=val_check_interval,
+    #     callbacks=[checkpoint_callback,early_stop_callback],
+    #     logger=tb_logger,
+    #     precision=16,
+    #     # strategy='ddp',
+    # )
+    trainer.fit(model, datamodule=dm)
 
-    print("Starting training")
-    save_dir = args.output_dir # create save directory to store models and training loss
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    # hyperparameters
-    eps = args.eps
-    max_grad_norm = args.max_grad_norm
-    num_training_steps = len(train_data_loader) * args.n_epochs
-    num_warmup_steps = args.num_warmup_steps
-
-    optimizer = AdamW(cc.parameters(), lr=args.lr, eps=eps)  # To reproduce BertAdam specific behavior set correct_bias=False
-    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=num_warmup_steps,
-                                    num_training_steps=num_training_steps)  # PyTorch scheduler
-
-    # training progress
-    total_steps = 0
-
-    for epoch in range(args.n_epochs):
-        # Reset the total loss for this epoch.
-        total_loss = 0
-        # For each batch of training data...
-        pbar = tqdm(train_data_loader)
-        for step,batch in enumerate(pbar):
-            # validation step
-            if total_steps % args.valid_interval == 0 and not total_steps == 0:
-                gc.collect()
-                torch.cuda.empty_cache()
-
-                y_true, y_pred = [],[]
-                with torch.no_grad():
-                    cc.eval()
-                    valid_loss = 0
-                    total_samples = 0
-                    for batch in val_data_loader:
-                        y_true.extend(batch['text'][0].tolist())
-                        loss,logits = cc(batch)
-                        y_pred.extend(logits.argmax(1).tolist())
-                        valid_loss+=loss.item()*len(logits)
-                        total_samples+=len(logits)
-                    valid_loss/=total_samples
-                # save valid loss
-                with open(os.path.join(save_dir, 'valid-loss.txt'), 'a') as f:
-                    f.write('\t'.join([str(x) for x in [total_steps, round(valid_loss, 4)]]) + '\n')
-                # compute metrics and save them separately
-                for name,fun in [('f1',f1_score),('precision',precision_score),('recall',recall_score)]:
-                    with open(os.path.join(save_dir,'valid-%s.txt'%name),'a') as f:
-                        f.write('Step %d\n'%total_steps)
-                        macro = fun(y_true=y_true,y_pred=y_pred,average='macro')
-                        classwise = fun(y_true=y_true,y_pred=y_pred,average=None)
-                        f.write('%1.3f\n'%macro)
-                        f.write('\t'.join([str(round(x,3)) for x in classwise])+'\n')
-
-                # clear any memory and gpu
-                gc.collect()
-                torch.cuda.empty_cache()
-
-                cc.train()
-
-            if total_steps % args.checkpoint_interval == 0 and not total_steps == 0:
-                # save models
-                torch.save(obj=cc.state_dict(), f=os.path.join(save_dir, '%d-steps-cc.pth' % (total_steps)))
-                # collect garbage
-                torch.cuda.empty_cache()
-                gc.collect()
-
-            optimizer.zero_grad()
-            # compute for one step
-            loss,logits = cc(batch)
-            # gradient descent and update
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(cc.parameters(), max_grad_norm)
-            optimizer.step()
-            scheduler.step()
-            total_loss += loss.item()
-            pbar.set_description("[%d] Loss at %d/%dth batch: %1.3f" %(int(os.getpid()),step+1,len(train_data_loader),loss.item()))
-            with open(os.path.join(save_dir,'training-loss.txt'),'a') as f:
-                f.write('\t'.join([str(x) for x in [step,round(loss.item(),4)]])+'\n')
-
-            total_steps += 1
-
-        print("Epoch %d complete! %d steps"%(epoch,total_steps))
-
+    if args.do_eval:
+        result = trainer.test(model,
+                  datamodule=dm, ckpt_path='best')[0]
+        with open(join(args.default_root_dir,'results.json'),'w') as f:
+            f.write(json.dumps(result))
     return
 
-
-
-def infer_bert(args):
-    assert os.path.exists(str(args.infer_data_file)),"The argument --infer_data_file should be a valid file"
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cpu')
-
-    # load model
-    cc = ConcatenatedClassifier(classifier_config_dir=args.classifier_config_dir, device=device, task_type='infer', n_clf_layers=args.n_clf_layers,
-                                use_dm=args.use_dm, use_pm=args.use_pm, use_rt=args.use_rt, use_bio=args.use_bio, use_name=args.use_name,
-                                use_network=args.use_network, use_count=args.use_count)
-    cc.load_state_dict(torch.load(args.model_dir))
-    cc.to(device)
-
-    # load data
-    data = []
-    with open(args.infer_data_file) as f:
-        for line in f:
-            data.append(json.loads(line))
-
-    dataset = CustomDataset(data_list=data, task_type='infer',
-             use_pm=args.use_pm, use_dm=args.use_dm, use_rt=args.use_rt, use_bio=args.use_bio,
-             use_network=args.use_network, use_count=args.use_count, use_name=args.use_name,
-             max_samples=args.max_samples)
-    data_loader = DataLoader(dataset, batch_size=args.batch_size*4, shuffle=False, num_workers=4, collate_fn=dataset.collate_fn)
-
-    print("Starting evaluation")
-    save_dir = args.output_dir # create save directory to store output files
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    pbar = tqdm(data_loader)
-    y_true, y_pred = [], []
-    with torch.no_grad():
-        cc.eval()
-        for batch in pbar:
-            logits = cc(batch)
-            y_pred.extend(logits.argmax(1).tolist())
-
-    # save
-    data_name = args.infer_data_file.split('/')[-1]
-    out = []
-    for (aid,bid),pred in zip(dataset.dyad_ids,y_pred):
-        out.append((aid,bid,['social','romance','family','organizational','parasocial'][pred]))
-    df = pd.DataFrame(out, columns=['user_id_a', 'user_id_b','predicted-relationship'])
-    save_file = os.path.join(args.output_dir, '%s-predictions.tsv' % data_name)
-    df.to_csv(save_file,sep='\t',index=False)
-    print("Saved inferred outputs to %s"%save_file)
+def eval(args):
+    dict_args = vars(args)
+    dm = RelationshipClassificationDataModule(**dict_args)
+    model = RelationshipClassifier(**dict_args)
+    trainer = Trainer.from_argparse_args(args)
+    result = trainer.test(model,
+                          datamodule=dm, ckpt_path=args.ckpt_path)[0]
+    with open(args.save_file, 'w') as f:
+        f.write(json.dumps(result))
     return
 
-
+def predict(args):
+    dict_args = vars(args)
+    dm = RelationshipClassificationDataModule(**dict_args)
+    model = RelationshipClassifier(**dict_args)
+    trainer = Trainer.from_argparse_args(args)
+    results = trainer.predict(model,
+                          datamodule=dm, ckpt_path=args.ckpt_path)
+    y_score, y_pred = [], []
+    for res in results:
+        y_score.extend(res['scores'])
+        y_pred.extend(res['labels'])
+    relationships = ['social','romance','family','organizational','parasocial']
+    y_pred = [relationships[i] for i in y_pred]
+    results = list(zip(y_score,y_pred))
+    df=pd.DataFrame(results,columns=['score','prediction'])
+    df.to_csv(join(args.save_file),sep='\t',index=False)
+    return
 
 if __name__=='__main__':
-    main()
+
+    parser = argparse.ArgumentParser()
+    parser = Trainer.add_argparse_args(parser)
+    parser = RelationshipClassifier.add_model_specific_args(parser)
+    parser = RelationshipClassificationDataModule.add_model_specific_args(parser)
+    parser.add_argument("--setting", type=str, default=None)
+    parser.add_argument("--do_train", action='store_true')
+    parser.add_argument("--do_eval", action='store_true')
+    parser.add_argument("--do_test", action='store_true')
+    parser.add_argument("--do_predict", action='store_true')
+    parser.add_argument("--ckpt_path", type=str,
+        default='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/checkpoint-epoch=2-val_f1=0.703-val_acc=0.717-val_loss=0.854.ckpt')
+    parser.add_argument("--save_file",type=str,default=None)
+    args = parser.parse_args()
+    if args.do_train:
+        train(args)
+    if args.do_test:
+        eval(args)
+    if args.do_predict:
+        predict(args)
+
+    """
+    Examples on how to apply different training / test / prediction settings
+    """
+    if args.setting=='all':
+        args.default_root_dir='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/all_features_3plus'
+        args.train_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/train_3plus.json.gz'
+        args.test_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/test_3plus.json.gz'
+        args.val_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz'
+        args.max_epochs=10
+        args.balance_training_set=True
+        args.use_public_mention = True
+        args.use_direct_mention = True
+        args.use_retweet = True
+        args.use_bio = True
+        args.use_activity = True
+        args.use_count = True
+        args.use_network = True
+        args.precision = 16
+        args.accelerator = 'gpu'
+        train(args)
+
+    if args.setting == 'without_network':
+        args.default_root_dir = '/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus'
+        args.train_data_file = '/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/train_3plus.json.gz'
+        args.test_data_file = '/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/test_3plus.json.gz'
+        args.val_data_file = '/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz'
+        args.max_epochs = 10
+        args.balance_training_set = True
+        args.use_public_mention = True
+        args.use_direct_mention = True
+        args.use_retweet = True
+        args.use_bio = True
+        args.use_activity = True
+        args.use_count = True
+        args.use_network = False
+        args.precision = 16
+        args.accelerator = 'gpu'
+        train(args)
+
+        # takes 20 mins just to go through the validation set once
+        # 1.25iter per second -> 1hr leads to 4500 iters
+        # 16hrs to go through one epoch -> maybe better to do validations like every 10 hrs?
+
+    if args.setting=='test':
+        args.save_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/results.json'
+        args.train_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/test_3plus.json.gz'
+        args.test_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/test_3plus.json.gz'
+        args.val_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz'
+        args.ckpt_path='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/checkpoint-epoch=2-val_f1=0.703-val_acc=0.717-val_loss=0.854.ckpt'
+        args.use_public_mention = True
+        args.use_direct_mention = True
+        args.use_retweet = True
+        args.use_bio = True
+        args.use_activity = True
+        args.use_count = True
+        args.use_network = False
+        args.precision = 16
+        args.accelerator = 'gpu'
+        args.test_batch_size = 64
+        eval(args)
+
+    if args.setting=='predict':
+        args.predict_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/test_3plus.json.gz' # change this to your custom file
+        args.save_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/predictions.df.tsv' # file for storing the predictions
+        args.ckpt_path='/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/checkpoint-epoch=2-val_f1=0.703-val_acc=0.717-val_loss=0.854.ckpt' # best to set this fixed unless you're using another model
+        args.use_public_mention = True
+        args.use_direct_mention = True
+        args.use_retweet = True
+        args.use_bio = True
+        args.use_activity = True
+        args.use_count = True
+        args.use_network = False
+        args.precision = 16
+        args.accelerator = 'gpu'
+        args.predict_batch_size = 16
+        # args.limit_predict_batches = 4 # for debugging purposes
+        predict(args)
 
 """
-CUDA_VISIBLE_DEVICES=0 python run.py \
- --do_infer --use_dm --use_pm --use_rt --use_name --use_bio --use_network --use_count \
- --infer_data_file=data/sample_outputs.json \
- --output_dir=data \
- --model_dir=data/full-model.pth \
- --checkpoint_interval=50000 --valid_interval=50000 --batch_size=2 \
- --classifier_config_dir=data/bert-config.json
-"""
+CUDA_VISIBLE_DEVICES=1 python run.py --setting all --accelerator gpu
+CUDA_VISIBLE_DEVICES=2 python run.py --setting without_network --accelerator gpu
 
-"""
+CUDA_VISIBLE_DEVICES=2 python run.py --setting test --accelerator gpu
+CUDA_VISIBLE_DEVICES=0 python run.py --setting predict --accelerator gpu
+
 CUDA_VISIBLE_DEVICES=0 python run.py \
- --do_train --use_dm --use_pm --use_rt --use_name --use_bio --use_network --use_count \
- --train_data_file=data/train-data-camera-ready.json \
- --val_data_file=data/train-data-camera-ready.json \
- --output_dir=data \
- --checkpoint_interval=50000 --valid_interval=50000 --batch_size=2 \
- --classifier_config_dir=data/bert-config.json
+    --do_predict --predict_batch_size=16 --accelerator gpu \
+    --use_public_mention --use_direct_mention --use_retweet \
+    --use_bio --use_activity --use_count \
+    --predict_data_file /shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/test_3plus.json.gz \
+    --save_file=/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/predictions.df.tsv \
+    --ckpt_path=/shared/0/projects/relationships/working-dir/relationship-prediction-new/results/without_network_3plus/checkpoint-epoch=2-val_f1=0.703-val_acc=0.717-val_loss=0.854.ckpt
 """

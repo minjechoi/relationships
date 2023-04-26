@@ -1,176 +1,288 @@
 import torch
 from torch import nn
-from transformers import RobertaModel, RobertaConfig
+from torch.optim import AdamW
+from transformers import (
+    AutoModel,
+    BertConfig,
+    get_linear_schedule_with_warmup,
+    get_constant_schedule,
+)
+from transformers.models.bert.modeling_bert import *
+import numpy as np
+from pytorch_lightning import LightningModule, Trainer
+from sklearn.metrics import f1_score, accuracy_score
 
-class ClassifierLayer(nn.Module):
-    """
-    An end-level module of linear layers that concatenates both embedding features and other features and obtains the classification results
-    """
-    def __init__(self, dim_h=768, n_class=5, use_network=False, use_count=False):
-        super(ClassifierLayer, self).__init__()
-
-        dim_in = dim_h
-        if use_network:
-            dim_in+=2
-        if use_count:
-            dim_in+=6 # 3x2
-        self.layer1 = nn.Linear(dim_in,512)
-        self.layer2 = nn.Linear(512,256)
-        self.out_proj = nn.Linear(256,n_class)
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(p=0.1,inplace=False)
-        self.loss_fn = nn.CrossEntropyLoss()
+class RelationshipClassifier(LightningModule):
+    def __init__(
+        self,
+        hidden_dim,
+        position_embedding_dim,
+        position_embedding_mode,
+        learning_rate,
+        adam_epsilon,
+        warmup_steps,
+        weight_decay,
+        **kwargs
+        ):
+        super().__init__()
+        self.save_hyperparameters()
         return
 
-    def forward(self, inputs, labels=None):
-        x = self.layer1(inputs)
-        x = self.relu(x)
-        x = self.layer2(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        outputs = self.out_proj(x)
+    def add_model_specific_args(parent_parser):
+        parser = parent_parser.add_argument_group("RelationshipClassifier")
+        # model settings
+        parser.add_argument("--hidden_dim",type=int,default=768)
+        parser.add_argument("--position_embedding_dim",type=int,default=128)
+        parser.add_argument("--position_embedding_mode",type=str,
+                    default='append',choices=['append','add'])
+        # training settings
+        parser.add_argument("--learning_rate",type=float,default=1e-5)
+        parser.add_argument("--adam_epsilon",type=float,default=1e-8)
+        parser.add_argument("--warmup_steps",type=float,default=0.0)
+        parser.add_argument("--weight_decay",type=float,default=0.01)
+        return parent_parser
 
-        if labels!=None:
-            loss = self.loss_fn(outputs,labels)
-            return loss,outputs
-        else:
-            return outputs
+    def setup(self, stage: str = None) -> None:
+        # setup model
+        self.use_text = self.trainer.datamodule.hparams.use_public_mention | \
+                        self.trainer.datamodule.hparams.use_direct_mention | \
+                        self.trainer.datamodule.hparams.use_retweet | \
+                        self.trainer.datamodule.hparams.use_bio
+        self.use_feature = self.trainer.datamodule.hparams.use_activity | \
+                           self.trainer.datamodule.hparams.use_count | \
+                           self.trainer.datamodule.hparams.use_network
 
-class ConcatenatedClassifier(nn.Module):
-    """
-    An end-level classifier that concatenates both embedding features and other features
-    """
-    def __init__(self, classifier_config_dir, device, task_type, n_clf_layers=6, use_dm=True, use_pm=True, use_rt=True, use_bio=False, use_name=False, use_network=False, use_count=False):
-        super(ConcatenatedClassifier, self).__init__()
-        # load text model
-        self.device = device
-        self.task_type = task_type
-        self.use_text = use_dm | use_pm | use_rt
-        self.use_bio = use_bio
-        self.use_name = use_name
-        self.use_etc = use_network | use_count
-        self.text_model = RobertaModel.from_pretrained("vinai/bertweet-base",
-                       output_attentions=False,output_hidden_states=False)
-        if self.use_name:
-            self.charEmbedding = nn.Embedding(num_embeddings=302,embedding_dim=300,
-                  padding_idx=301) # 302: 300-top frequent + pad + unk
-            self.conv3 = nn.Conv1d(in_channels=300,out_channels=256,kernel_size=3,padding=1)
-            self.conv4 = nn.Conv1d(in_channels=300,out_channels=256,kernel_size=4,padding=1)
-            self.conv5 = nn.Conv1d(in_channels=300,out_channels=256,kernel_size=5,padding=1)
+        if self.hparams.position_embedding_mode=='add':
+            feature_embedding_dim = self.hparams.hidden_dim
+        elif self.hparams.position_embedding_mode=='append':
+            feature_embedding_dim = self.hparams.hidden_dim + self.hparams.position_embedding_dim
 
-        # load classifier for combining these features
-        config = RobertaConfig()
-        config = config.from_json_file(classifier_config_dir)
-        config.num_hidden_layers = n_clf_layers
-        config.num_attention_heads = n_clf_layers
-        config.max_position_embeddings = 7
-        if self.use_bio:
-            config.max_position_embeddings+=2
-        if self.use_name:
-            config.max_position_embeddings+=4
-        self.concat_model = RobertaModel(config)
-        self.classifier = ClassifierLayer(use_count=use_count,use_network=use_network)
+        # load text encoder
+        self.text_encoder = AutoModel.from_pretrained(
+            self.trainer.datamodule.hparams.language_model_name_or_path,
+            cache_dir=self.trainer.datamodule.hparams.language_model_cache_dir)
+
+        # load feature bins and create position and feature embeddings
+        self.feature2bins={}
+        self.idx2feature_name=[]
+        with open(self.hparams.feature_bin_file_dir) as f:
+            for i,line in enumerate(f):
+                line=line.strip().split(',')
+                self.feature2bins[line[0]]=int(line[1])+1
+                self.idx2feature_name.append(line[0])
+
+        embedding_dict={}
+        embedding_dict['position_embedding'] = nn.Embedding(60,
+                                                    self.hparams.position_embedding_dim)
+        for k,n_bins in self.feature2bins.items():
+            embedding_dict[k]= nn.Embedding(n_bins,self.hparams.hidden_dim)
+        self.model_embeddings = nn.ModuleDict(embedding_dict)
+
+        # load encoder mixer
+        config = BertConfig()
+        config.update({'hidden_size':feature_embedding_dim, 'num_attention_heads':8})
+        self.encoder_mixer = nn.ModuleList([BertLayer(config) for _ in range(3)])
+        self.classifier = nn.Linear(feature_embedding_dim,5)
+        self.criterion = nn.CrossEntropyLoss()
+
+        if stage!='fit':
+            return
+        # for training stage: get number of steps
+        train_loader = self.trainer.datamodule.train_dataloader()
+
+        # Calculate total steps
+        tb_size = self.trainer.datamodule.hparams.train_batch_size
+        # ab_size = self.trainer.accumulate_grad_batches * float(self.trainer.max_epochs)
+        self.total_steps = (len(train_loader.dataset) // tb_size) * self.trainer.max_epochs
+        if type(self.hparams.warmup_steps)==float:
+            if self.hparams.warmup_steps<=1:
+                self.hparams.warmup_steps = int(self.total_steps*self.hparams.warmup_steps)
+            else:
+                self.hparams.warmup_steps = int(self.hparams.warmup_steps)
+
+    def forward(self, batch, use_text=True, use_feature=False):
+        batch_size = len(batch['labels'])
+        # stage 1: obtain text representations
+        combined_outputs = []
+        if use_text:
+            # print(batch['input_ids'])
+            # print(batch['input_ids'].max())
+            pooled_outputs = self.text_encoder(input_ids=batch['input_ids'],
+                                               attention_mask=batch['attention_mask'])[1]
+            pooled_outputs = pooled_outputs.reshape(batch_size,-1,self.hparams.hidden_dim)
+            # print(batch['input_ids'].shape)
+            text_position_idxs = batch['text_pos_idx'][:,1].reshape(batch_size,-1)
+            text_position_embeddings = self.model_embeddings['position_embedding'](text_position_idxs)
+            if self.hparams.position_embedding_mode=='append':
+                text_outputs = torch.cat([pooled_outputs,text_position_embeddings],dim=2)
+            elif self.hparams.position_embedding_mode=='add':
+                text_outputs = pooled_outputs + text_position_embeddings
+            combined_outputs.append(text_outputs)
+
+        if use_feature:
+            feature_binned_embeddings = []
+            # print(batch['features_binned'])
+            # print(batch['features_emb_idx'])
+            for i,feature_idx in enumerate(batch['features_emb_idx'].cpu().tolist()):
+                bin_idxs = batch['features_binned'][:,i]
+                # print('bin_idxs',bin_idxs)
+                feature_name = self.idx2feature_name[feature_idx]
+                # print(feature_name)
+                # print(self.feature2bins[feature_name])
+                # print('max_val',bin_idxs.max())
+                embedding_values = self.model_embeddings[feature_name](bin_idxs)
+                feature_binned_embeddings.append(embedding_values)
+            feature_binned_embeddings = torch.stack(feature_binned_embeddings,dim=1)
+            # print(batch['features_pos_idx'].shape)
+            feature_position_embeddings = self.model_embeddings['position_embedding'](batch['features_pos_idx'])
+            feature_position_embeddings = feature_position_embeddings.unsqueeze(0)
+            size = feature_position_embeddings.shape
+            feature_position_embeddings = feature_position_embeddings.expand(batch_size,size[1],size[2])
+            if self.hparams.position_embedding_mode=='append':
+                # print(feature_binned_embeddings.shape)
+                # print(feature_position_embeddings.shape)
+                feature_outputs = torch.cat([feature_binned_embeddings,feature_position_embeddings],dim=2)
+            elif self.hparams.position_embedding_mode=='add':
+                feature_outputs = feature_binned_embeddings + feature_position_embeddings
+            combined_outputs.append(feature_outputs)
+        if len(combined_outputs)==2:
+            combined_outputs = torch.cat(combined_outputs,dim=1)
+        elif len(combined_outputs)==1:
+            combined_outputs = combined_outputs[0]
+
+        # put into encoder mixer
+        for layer in self.encoder_mixer:
+            combined_outputs = layer(combined_outputs)[0]
+        pooled_outputs = combined_outputs.max(1)[0]
+        logits = self.classifier(pooled_outputs)
+        return logits
+
+    def training_step(self, batch, batch_idx):
+        logits = self.forward(batch, use_text=self.use_text, use_feature=self.use_feature)
+        labels = batch['labels']
+        loss = self.criterion(logits,labels)
+        self.log("tr_loss", loss.item(), on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        result = {}
+        logits = self.forward(batch, use_text=self.use_text, use_feature=self.use_feature)
+        labels = batch['labels']
+        loss = self.criterion(logits,labels)
+        result['loss'] = loss.item()
+        result['preds'] = logits.argmax(1).detach().cpu().tolist()
+        result['answers'] = labels.detach().cpu().tolist()
+        return result
+
+    def validation_epoch_end(self, results):
+        y_true, y_pred = [], []
+        val_loss = []
+
+        for res in results:
+            y_pred.extend(res['preds'])
+            y_true.extend(res['answers'])
+            val_loss.append(res['loss'])
+        f1 = f1_score(y_true,y_pred,average='macro')
+        acc = accuracy_score(y_true,y_pred)
+        val_loss = np.mean(val_loss)
+        log_dict = {'val_f1':round(f1,3),
+                    'val_acc':round(acc,3),
+                    'val_loss':round(val_loss,3)}
+        self.log_dict(log_dict,prog_bar=True)
         return
 
-    def forward(self, batch):
-        """
-        A function for training each step
-        :param batch: batch data
-        :return: outputs,loss
-        """
-        # 1) load data and change to cuda
-        if self.task_type!='infer':
-            labels = batch['labels']
-            labels = torch.tensor(labels).to(self.device)
-        if self.use_text:
-            texts, masks, n_samples, pos_out = batch['tweet']
-            texts, masks = texts.to(self.device), masks.to(self.device)
-            hidden = self.text_model(input_ids=texts, attention_mask=masks)[0]
-        if self.use_bio:
-            bio_texts, bio_masks, bio_n_samples, bio_pos_out = batch['bio']
-            bio_texts, bio_masks = bio_texts.to(self.device), bio_masks.to(self.device)
-            hidden_b = self.text_model(input_ids=bio_texts, attention_mask=bio_masks)[0]
+    def test_step(self, batch, batch_idx):
+        return self.validation_step(batch, batch_idx)
 
-        if self.use_name:
-            names, name_pos_out = batch['name']
-            names = names.to(self.device)
-            emb_names = self.charEmbedding(names) # batch x seq x dim (300)
-            emb_names = emb_names.transpose(2,1)
-            hidden_n3 = self.conv3(emb_names).max(-1)[0] # batch x 256
-            hidden_n4 = self.conv4(emb_names).max(-1)[0]
-            hidden_n5 = self.conv5(emb_names).max(-1)[0]
-            hidden_name = torch.cat([hidden_n3,hidden_n4,hidden_n5],1) # 4*batch x 256
-            arr_n = hidden_name # batch*4 x 256 (4 since there are 4 types of names)
+    def test_epoch_end(self, results):
+        y_true, y_pred = [], []
+        val_loss = []
 
-        if self.use_etc:
-            # if using either networks or normalized counts
-            hidden_etc = batch['etc'].to(self.device)
+        for res in results:
+            y_pred.extend(res['preds'])
+            y_true.extend(res['answers'])
+            val_loss.append(res['loss'])
+        f1 = f1_score(y_true,y_pred,average='macro')
+        acc = accuracy_score(y_true,y_pred)
+        val_loss = np.mean(val_loss)
+        log_dict = {'test_f1':round(f1,3),
+                    'test_acc':round(acc,3),
+                    'test_loss':round(val_loss,3)}
+        self.log_dict(log_dict,prog_bar=True)
+        return log_dict
 
-        # 3) reorganize hidden states so that each dyad gets a stacked matrix containing all the tweets and bio info
-        max_ln = max(n_samples)
-        text_lengths = masks.sum(1).tolist()  # length of each text sentence, will be used to get the avg of each
-        if self.use_bio:
-            bio_lengths = bio_masks.sum(1).tolist()
-            max_ln += 2
-        if self.use_name:
-            max_ln += 4
+    def predict_step(self, batch, batch_idx):
+        result = {}
+        logits = self.forward(batch, use_text=self.use_text, use_feature=self.use_feature)
+        logits = logits.softmax(dim=1).detach().cpu().max(dim=1)
+        result['scores'] = logits.values.tolist()
+        result['labels'] = logits.indices.tolist()
+        return result
 
-        idx = 0  # idx of which sentence to look at
-        idx_b = 0  # idx of which bio to look at
-        concat_hidden = []  # concatenated version of all hidden layers
-        concat_masks = []
-        position_ids = []  # a batch * seq size matrix, storing the position ids
+    def configure_optimizers(self):
+        no_decay = ['bias', 'LayerNorm.weight']
 
-        start_idx=0
-        for ln, n in enumerate(n_samples):
-            arr = [hidden[i, :text_lengths[i], :].mean(0) for i in range(idx, idx + n)]  # get the summary of a sentence using the mean
-            try:
-                arr = torch.stack(arr, 0)  # stack the sentences to create a n_texts * dim size matrix
-            except:
-                print(ln,n,text_lengths)
-                print(texts[0])
-                import sys
-                sys.exit(0)
-            idx += n  # add idx to look into the next dyad and its sentences
-            pos_tmp = []
-            pos_tmp.extend(pos_out[start_idx:start_idx+n])  # the position settings of the sentences
-            start_idx+=n
-            if self.use_bio:
-                arr_b = torch.stack([hidden_b[i, :bio_lengths[i]].mean(0) for i in range(idx_b, idx_b + 2)], 0)
-                idx_b += 2
-                arr = torch.cat([arr, arr_b], 0)
-                # pos_tmp.extend(bio_pos_out[ln])
-                pos_tmp.extend([6,7])
+        no_decay_params = []
+        decay_params = []
 
-            if self.use_name:
-                arr = torch.cat([arr,arr_n[ln*4:(ln+1)*4]], 0)
-                pos_tmp.extend([8,9,10,11])
+        # all_params = []
+        all_params = [self.text_encoder, self.model_embeddings, self.encoder_mixer, self.classifier]
+        # for component in [self.text_encoder, self.model_embeddings, self.encoder_mixer, self.classifier]:
+        #     all_params.extend(list(component.values()))
+        # all_params.extend(list(self.classifier_dict.values()))
+        # all_params.extend(list(self.classifier_dict.values()))
+        for module in all_params:
+            no_decay_params.extend([p for n, p in module.named_parameters() if not any(nd in n for nd in no_decay)])
+            decay_params.extend([p for n, p in module.named_parameters() if any(nd in n for nd in no_decay)])
 
-            concat_masks.append([1] * len(arr) + [0] * (max_ln - len(arr)))
-            if len(arr) < max_ln:
-                pos_tmp.extend(
-                    [0] * (max_ln - len(arr)))  # attach zeros to pos_tmp so that it becomes the max sequence length
+        optimizer_grouped_parameters = [
+            {"params": no_decay_params, "weight_decay": self.hparams.weight_decay},
+            {"params": decay_params, "weight_decay": 0.0}
+        ]
+        optimizer = AdamW(optimizer_grouped_parameters,
+                          lr=self.hparams.learning_rate,
+                          eps=self.hparams.adam_epsilon)
 
-                # get a block of max_seq * dim by creating a temporary block filled with zeros
-                tmp_block = torch.zeros(max_ln - len(arr), arr.shape[1])
-                tmp_block = tmp_block.to(self.device)
-                arr = torch.cat([arr, tmp_block], 0)
-            concat_hidden.append(arr)  # concatenate these
-            position_ids.append(pos_tmp)
-        concat_hidden = torch.stack(concat_hidden, 0)
-        concat_masks = torch.tensor(concat_masks).to(self.device)
-        position_ids = torch.tensor(position_ids).to(self.device)
-        token_type_ids = torch.zeros_like(position_ids).to(self.device)
-
-        # second model: get vector representation of all text features
-        hidden_2 = self.concat_model(inputs_embeds=concat_hidden, attention_mask=concat_masks, position_ids=position_ids, token_type_ids=token_type_ids)[0]
-        hidden_2 = hidden_2[:,0] # batch x 768
-
-        # third model: concatenate with existing features, then classify
-        if self.use_etc:
-            hidden_2 = torch.cat([hidden_2,hidden_etc],1) # batch x (768+n)
-        if self.task_type=='infer':
-            outputs = self.classifier(hidden_2,labels=None)
+        if self.hparams.warmup_steps>0:
+            scheduler = get_linear_schedule_with_warmup(
+                optimizer,
+                num_warmup_steps=self.hparams.warmup_steps,
+                num_training_steps=self.total_steps
+            )
         else:
-            outputs = self.classifier(hidden_2,labels=labels)
-        return outputs
+            scheduler = get_constant_schedule(
+                optimizer
+            )
+        # scheduler = get_constant_schedule_with_warmup(
+        #     optimizer,
+        #     num_warmup_steps=self.hparams.warmup_steps,
+        # )
+        scheduler = {"scheduler": scheduler, "interval": "step", "frequency": 1}
+        return [optimizer], [scheduler]
+
+if __name__=='__main__':
+    from pl_dataloader import *
+    dm = RelationshipClassificationDataModule(
+        train_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz',
+        val_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz',
+        test_data_file='/shared/0/projects/relationships/working-dir/relationship-prediction-new/data/processed-data/val_3plus.json.gz',
+        balance_training_set=True,
+        use_public_mention=True,
+        use_direct_mention=True,
+        use_retweet=True,
+        use_bio=True,
+        # use_activity=True,
+        # use_count=True,
+        use_network=True,
+    )
+    # dm.setup(stage='fit')
+    # batch=next(iter(dm.test_dataloader()))
+    cls=RelationshipClassifier(
+    position_embedding_dim=128
+    )
+    trainer = Trainer(limit_test_batches=10,
+                      accelerator='gpu')
+    trainer.test(cls,datamodule=dm)
+    # logits = cls.forward(batch)
+    # print(logits)
+    # print(cls)

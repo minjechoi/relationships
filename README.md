@@ -71,6 +71,8 @@ CUDA_VISIBLE_DEVICES=0 python run.py \
     --ckpt_path=FILE_PATH_OF_PRETRAINED_MODEL
 ```
 
+** Note: if you do not have access to the features obtained from network interactions, you can use the model without network data which yields similar performance **
+
 ## Request for relationship dataset
 Unfortunately, we do not provide the datasets which we used for training the models as it contains conversations of real Twitter users. 
 However, we are able to provide a dataset consisting of the user IDs and the relationship categories of the user dyads in Twitter.

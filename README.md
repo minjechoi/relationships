@@ -47,7 +47,8 @@ You will need to have an application of the Twitter API [(link)](https://develop
 
 ### 0. Download the pretrained model provided by the authors
 ```
-python download-pretrained-models.py
+Model trained on all features: [(link)](https://drive.google.com/file/d/1jrDiaSWJyrx6U08qlXg9kaWq9-vgYRzN/view?usp=share_link)
+Model trained on all features except network features: [(link)](https://drive.google.com/file/d/1Z1536SEIT9cVk127FY6nvdaCPf84GSD5/view?usp=share_link)
 ```
 
 ### 1. Update the credentials in `data/credentials.txt`.
@@ -69,18 +70,20 @@ The interactions will be stored in `data/sample_outputs.json`.
 ### 4. Infer the relationships with the model using the following code. 
 ```
 CUDA_VISIBLE_DEVICES=0 python run.py \
- --do_infer --use_dm --use_pm --use_rt --use_name --use_bio --use_network --use_count \
- --infer_data_file=data/sample_outputs.json \
- --output_dir=data \
- --model_dir=data/full-model.pth \
- --batch_size=8 \
- --classifier_config_dir=data/bert-config.json
+    --do_predict --predict_batch_size=16 --accelerator gpu \
+    --use_public_mention --use_direct_mention --use_retweet \
+    --use_bio --use_activity --use_count \
+    --predict_data_file FILE_PATH_OF_INPUT_FILE \
+    --save_file=FILE_PATH_OF_OUTPUT_FILE_CONTAINING_INFERRED_SCORES \
+    --ckpt_path=FILE_PATH_OF_PRETRAINED_MODEL
 ```
 The results will be stored in `data/sample_outputs.json-predictions.tsv`.
 
 ## Request for relationship dataset
 Unfortunately, we do not provide the datasets which we used for training the models as it contains conversations of real Twitter users. 
-However, we are able to provide a dataset consisting of the user IDs and the relationship categories of the user dyads in Twitter. If interested, please send a request email to [minje@umich.edu].
+However, we are able to provide a dataset consisting of the user IDs and the relationship categories of the user dyads in Twitter.
+If interested, please send a request email to [minje@umich.edu].
+These are available at [(link)](https://drive.google.com/file/d/1VKn49kVB-96RTpfvEWE95iUyfWlaxpFw/view?usp=share_link)
 
 ### Contact
 For questions, please contact the main author via [minje@umich.edu]. Thanks!

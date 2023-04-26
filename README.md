@@ -28,18 +28,6 @@ This code was tested under the following package dependencies. The package versi
 This model also requires the installation of BerTweet [(link)](https://huggingface.co/vinai/bertweet-base). 
 Please keep this in mind if you plan to run the model in an offline environment where the huggingface models and tokenizers cannot be automatically installed.
 
-## Example of training model
-
-```
-CUDA_VISIBLE_DEVICES=0 python run.py \
- --do_train --use_dm --use_pm --use_rt --use_name --use_bio --use_network --use_count \
- --train_data_file=data/train-data-camera-ready.json \
- --val_data_file=data/train-data-camera-ready.json \
- --output_dir=data \
- --checkpoint_interval=50000 --valid_interval=50000 --batch_size=8 \
- --classifier_config_dir=data/bert-config.json
-```
-
 
 ## Inferencing relationship types from tweets collected via the Twitter API
 We provide methods for inferring the relationships between any two Twitter users, provided that both of their tweet information is available by the Twitter API.
@@ -67,7 +55,12 @@ user_id3,username3
 ### 3. Download their interactions by running `python collect-from-twitter.py`. 
 The interactions will be stored in `data/sample_outputs.json`.
 
-### 4. Infer the relationships with the model using the following code. 
+### 4. Alternative: if you have data of the dyad interactions
+You have to change the data as the same format as `data/train-data-camera-ready.json.gz`.
+1. The file should be gzip-zipped
+2. Each line should be a json object that contains the interactions between the dyads
+
+### 5. Infer the relationships with the model using the following code. 
 ```
 CUDA_VISIBLE_DEVICES=0 python run.py \
     --do_predict --predict_batch_size=16 --accelerator gpu \
@@ -77,7 +70,6 @@ CUDA_VISIBLE_DEVICES=0 python run.py \
     --save_file=FILE_PATH_OF_OUTPUT_FILE_CONTAINING_INFERRED_SCORES \
     --ckpt_path=FILE_PATH_OF_PRETRAINED_MODEL
 ```
-The results will be stored in `data/sample_outputs.json-predictions.tsv`.
 
 ## Request for relationship dataset
 Unfortunately, we do not provide the datasets which we used for training the models as it contains conversations of real Twitter users. 
